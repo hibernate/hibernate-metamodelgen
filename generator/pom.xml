@@ -14,16 +14,6 @@
             <groupId>org.hibernate.java-persistence</groupId>
             <artifactId>jpa-api</artifactId>
         </dependency>
-
-        <!--
-        Test dependencies
-        -->
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <scope>test</scope>
-            <classifier>jdk15</classifier>
-        </dependency>
     </dependencies>
     <build>
         <defaultGoal>test</defaultGoal>

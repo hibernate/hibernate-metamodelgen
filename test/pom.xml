@@ -17,16 +17,12 @@
             <artifactId>hibernate-jpamodel-generator</artifactId>
             <version>${version}</version>
         </dependency>
-
-        <!--
-        Test dependencies
-        -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <scope>test</scope>
+            <version>5.8</version>
             <classifier>jdk15</classifier>
-        </dependency>
+        </dependency>        
     </dependencies>
     <build>
         <defaultGoal>test</defaultGoal>

@@ -24,7 +24,7 @@ import model.metamodel.Shop_;
  * the query. The typesafe metamodel objects were validated at init time,
  * so it is impossible to build invalid queries in the application code.
  */
-public class Test {
+public class QueryTest {
 
 	QueryBuilder qb;
 
