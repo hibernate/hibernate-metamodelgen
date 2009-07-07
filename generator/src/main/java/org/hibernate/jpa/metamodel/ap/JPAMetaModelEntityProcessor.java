@@ -1,14 +1,24 @@
 package org.hibernate.jpa.metamodel.ap;
 
-
-
-import static javax.lang.model.SourceVersion.RELEASE_6;
-
-import java.io.*;
-import java.util.*;
-
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.annotation.Generated;
-import javax.annotation.processing.*;
+import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.FilerException;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedAnnotationTypes;
+import javax.annotation.processing.SupportedSourceVersion;
+import static javax.lang.model.SourceVersion.RELEASE_6;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -28,209 +38,236 @@ import org.hibernate.jpa.metamodel.xml.jaxb.EntityMappings;
 import org.hibernate.jpa.metamodel.xml.jaxb.ObjectFactory;
 
 //@SupportedAnnotationTypes("javax.persistence.Entity")
-@SupportedAnnotationTypes("*") // TODO: this is not very effective
+@SupportedAnnotationTypes("*")
 @SupportedSourceVersion(RELEASE_6)
 public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
-    //private static final String ORM_XML_LOCATION = "/META-INF/orm.xml";
+	private static final Map<String, IMetaEntity> metaEntities = new HashMap<String, IMetaEntity>();
 
-    private static final Map<String, IMetaEntity> metaEntities = new HashMap<String, IMetaEntity>();
+	private boolean ormProcessed = false;
 
-    private boolean ormProcessed = false;
+	public JPAMetaModelEntityProcessor() {
+	}
 
-    public JPAMetaModelEntityProcessor() {
-    	System.out.println("Created Processor " + this);
-    }
+	public void init(ProcessingEnvironment env) {
+		super.init( env );
+		processingEnv.getMessager().printMessage( Diagnostic.Kind.NOTE, "Init Processor " + this );
+	}
 
-    public void init(ProcessingEnvironment env) {    	
-        super.init(env);
-        System.out.println("Init Processor " + this);
-    }
-    
-    private void parsingOrmXmls() {
-    	//make sure that we process ORM files only once per round 
-    	if (ormProcessed) return;
-    	parsingOrmXml("/META-INF", "orm.xml");
-        //simulate 20 different ORM files to parse
-    	//Removed since these causes issues in Eclipse APT
-        //for (int i = 1 ; i <= 20 ; i++) parsingOrmXml("/model" + i , "orm.xml");
-    	
-        ormProcessed = true;
-    }
-
-    /**
-     * Tries to check whether a orm.xml file exists and parses it using JAXB
-     */
-    private void parsingOrmXml(String pkg, String name) {
-    	String resource = pkg +"/"+name;
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "XYZ Checking for " + resource);
-        
-        InputStream ormStream = null;
-        try {
-			FileObject resource2 = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, pkg, name);
-			ormStream = resource2.openInputStream();
-		} catch (IOException e1) {
-			processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, "Could not locate " + resource + " via APT api");
-			//TODO: possible remove this fallback since it should not be needed.
-			ormStream = this.getClass().getResourceAsStream(resource);
+	private void parsingOrmXmls() {
+		//make sure that we process ORM files only once per round
+		if ( ormProcessed ) {
+			return;
 		}
-        
-        if (ormStream == null) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, resource + " not found.");
-            return;
-        }
-        try {
-            JAXBContext jc = JAXBContext.newInstance(ObjectFactory.class);
-            Unmarshaller unmarshaller = jc.createUnmarshaller();
-            EntityMappings mappings = (EntityMappings) unmarshaller.unmarshal(ormStream);
-            Collection<Entity> entities = mappings.getEntity();
-            String packageName = mappings.getPackage();
-            for (Entity entity : entities) {
-                String fullyQualifiedClassName = packageName + "." + entity.getClazz();
-                Elements utils = processingEnv.getElementUtils();
-                XmlMetaEntity metaEntity = new XmlMetaEntity(entity, packageName, utils.getTypeElement(fullyQualifiedClassName));
-                writeFile(metaEntity);
+		parsingOrmXml( "/META-INF", "orm.xml" );
+		//simulate 20 different ORM files to parse
+		//Removed since these causes issues in Eclipse APT
+		//for (int i = 1 ; i <= 20 ; i++) parsingOrmXml("/model" + i , "orm.xml");
 
-                // keep track of alreay processed entities
-                metaEntities.put(fullyQualifiedClassName, metaEntity);
-            }
-        } catch (JAXBException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Error unmarshalling orm.xml");
-            e.printStackTrace();
-        } catch (Exception e) {
-        	processingEnv.getMessager().printMessage(
-                       Diagnostic.Kind.ERROR,
-                       "Problem while reading " + resource + " " + e.getMessage());
-        	e.printStackTrace();
-        	//TODO: too bad you can't mark resources as having issues
-        }
-    }
+		ormProcessed = true;
+	}
 
-    /**
-     * Process JPA-specific annotations in Java entity classes.
-     *
-     * @param aAnnotations      Matching annotations to be processed.
-     * @param aRoundEnvironment Annotation processing round environment.
-     * @return
-     */
-    @Override
-    public boolean process(final Set<? extends TypeElement> aAnnotations,
-                           final RoundEnvironment aRoundEnvironment) {
+	/**
+	 * Tries to check whether a orm.xml file exists and parses it using JAXB
+	 */
+	private void parsingOrmXml(String pkg, String name) {
 
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Processing annotations:" + aAnnotations);
+		InputStream ormStream = getInputStreamForResource( pkg, name );
 
-        StringBuilder sb = new StringBuilder("xxx" + new Date().toLocaleString());
-        Set<? extends Element> elements = aRoundEnvironment.getRootElements();
-        sb.append("\n\n");
-        for (Element element : elements) {
-            sb.append(element.toString());
-            sb.append("\n");
-            handleRootElementAnnotationMirrors(element);
-        }
+		String resource = getFullResourcePath( pkg, name );
+		if ( ormStream == null ) {
+			processingEnv.getMessager().printMessage( Diagnostic.Kind.NOTE, resource + " not found." );
+			return;
+		}
+		try {
+			JAXBContext jc = JAXBContext.newInstance( ObjectFactory.class );
+			Unmarshaller unmarshaller = jc.createUnmarshaller();
+			EntityMappings mappings = ( EntityMappings ) unmarshaller.unmarshal( ormStream );
+			Collection<Entity> entities = mappings.getEntity();
+			String packageName = mappings.getPackage();
+			for ( Entity entity : entities ) {
+				String fullyQualifiedClassName = packageName + "." + entity.getClazz();
+				Elements utils = processingEnv.getElementUtils();
+				XmlMetaEntity metaEntity = new XmlMetaEntity(
+						entity, packageName, utils.getTypeElement( fullyQualifiedClassName )
+				);
+				writeFile( metaEntity );
 
-        sb.append("xxx");
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, sb.toString());
+				// keep track of alreay processed entities
+				metaEntities.put( fullyQualifiedClassName, metaEntity );
+			}
+		}
+		catch ( JAXBException e ) {
+			processingEnv.getMessager().printMessage( Diagnostic.Kind.NOTE, "Error unmarshalling orm.xml" );
+			e.printStackTrace();
+		}
+		catch ( Exception e ) {
+			processingEnv.getMessager().printMessage(
+					Diagnostic.Kind.ERROR,
+					"Problem while reading " + resource + " " + e.getMessage()
+			);
+			e.printStackTrace();
+			//TODO: too bad you can't mark resources as having issues
+		}
+	}
 
+	private InputStream getInputStreamForResource(String pkg, String name) {
+		String resource = getFullResourcePath( pkg, name );
+		processingEnv.getMessager()
+				.printMessage( Diagnostic.Kind.NOTE, "Checking for " + resource );
+		InputStream ormStream;
+		try {
+			FileObject fileObject = processingEnv.getFiler().getResource( StandardLocation.CLASS_OUTPUT, pkg, name );
+			ormStream = fileObject.openInputStream();
+		}
+		catch ( IOException e1 ) {
+			processingEnv.getMessager()
+					.printMessage(
+							Diagnostic.Kind.WARNING,
+							"Could not load " + resource + " using Filer.getResource(). Trying classpath..."
+					);
+			ormStream = this.getClass().getResourceAsStream( resource );
+		}
+		return ormStream;
+	}
 
-        if (aRoundEnvironment.processingOver()) {
-        	//assuming that when processing is over, we are done and clear resources like ORM parsing
-        	//we could keep some ORM parsing in memory but how to detect that a file has changed / not changed? 
-        	ormProcessed = false;
-        	metaEntities.clear();
-        	processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Clear ORM processing resources");
-            return false;	
-        }
-        parsingOrmXmls();
-        for (Element element : elements) {
-            handleRootElementAnnotationMirrors(element);
-        }
+	private String getFullResourcePath(String pkg, String name) {
+		return pkg + "/" + name;
+	}
 
-        return true;
-    }
+	@Override
+	public boolean process(final Set<? extends TypeElement> aAnnotations,
+						   final RoundEnvironment aRoundEnvironment) {
 
-    private void handleRootElementAnnotationMirrors(final Element element) {
+		writeInitialProcessingDiagnostics( aAnnotations, aRoundEnvironment );
 
-        List<? extends AnnotationMirror> annotationMirrors = element
-                .getAnnotationMirrors();
+		if ( aRoundEnvironment.processingOver() ) {
+			//assuming that when processing is over, we are done and clear resources like ORM parsing
+			//we could keep some ORM parsing in memory but how to detect that a file has changed / not changed?
+			ormProcessed = false;
+			metaEntities.clear();
+			processingEnv.getMessager().printMessage( Diagnostic.Kind.NOTE, "Clear ORM processing resources" );
+			return false;
+		}
 
-        for (AnnotationMirror mirror : annotationMirrors) {
-            final String annotationType = mirror.getAnnotationType().toString();
+		parsingOrmXmls();
 
-            if (element.getKind() == ElementKind.CLASS &&
-                    annotationType.equals(javax.persistence.Entity.class.getName())) {
-                MetaEntity metaEntity = new MetaEntity(processingEnv, (TypeElement) element);
-                writeFile(metaEntity);
-            }
-        }
-    }
+		Set<? extends Element> elements = aRoundEnvironment.getRootElements();
+		for ( Element element : elements ) {
+			handleRootElementAnnotationMirrors( element );
+		}
 
-    private void writeFile(IMetaEntity entity) {
+		return true;
+	}
 
-        try {
-            String metaModelPackage = entity.getPackageName();
+	private void writeInitialProcessingDiagnostics(Set<? extends TypeElement> aAnnotations, RoundEnvironment aRoundEnvironment) {
+		StringBuilder sb = new StringBuilder();
+		sb.append( "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" );
+		sb.append( new Date().toLocaleString() );
+		sb.append( "\n" );
+		sb.append( "Processing annotations " ).append( aAnnotations ).append( " on:" );
 
-            StringBuffer body = generateBody(entity);
+		Set<? extends Element> elements = aRoundEnvironment.getRootElements();
+		sb.append( "\n" );
+		for ( Element element : elements ) {
+			sb.append( element.toString() );
+			sb.append( "\n" );
+		}
+		sb.append( ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" );
+		processingEnv.getMessager().printMessage( Diagnostic.Kind.NOTE, sb.toString() );
+	}
 
-            FileObject fo = processingEnv.getFiler().createSourceFile(
-                    metaModelPackage + "." + entity.getSimpleName() + "_");
-            OutputStream os = fo.openOutputStream();
-            PrintWriter pw = new PrintWriter(os);
+	private void handleRootElementAnnotationMirrors(final Element element) {
 
-            pw.println("package " + metaModelPackage + ";");
+		List<? extends AnnotationMirror> annotationMirrors = element
+				.getAnnotationMirrors();
 
-            pw.println();
+		for ( AnnotationMirror mirror : annotationMirrors ) {
+			final String annotationType = mirror.getAnnotationType().toString();
 
-            pw.println(entity.generateImports());
+			if ( element.getKind() == ElementKind.CLASS &&
+					annotationType.equals( javax.persistence.Entity.class.getName() ) ) {
+				MetaEntity metaEntity = new MetaEntity( processingEnv, ( TypeElement ) element );
+				writeFile( metaEntity );
+			}
+		}
+	}
 
-            pw.println(body);
+	private void writeFile(IMetaEntity entity) {
 
-            pw.flush();
-            pw.close();
+		try {
+			String metaModelPackage = entity.getPackageName();
 
-        } catch (FilerException filerEx) {
-            processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Problem with Processing Environment Filer: "
-                            + filerEx.getMessage());
-        } catch (IOException ioEx) {
-            processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Problem opening file to write MetaModel for " + entity.getSimpleName()
-                            + ioEx.getMessage());
-        } 
-    }
+			StringBuffer body = generateBody( entity );
 
-    /**
-     * Generate everything after import statements
-     *
-     * @return body content
-     */
-    private StringBuffer generateBody(IMetaEntity entity) {
+			FileObject fo = processingEnv.getFiler().createSourceFile(
+					metaModelPackage + "." + entity.getSimpleName() + "_"
+			);
+			OutputStream os = fo.openOutputStream();
+			PrintWriter pw = new PrintWriter( os );
 
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = null;
-        try {
+			pw.println( "package " + metaModelPackage + ";" );
 
-            pw = new PrintWriter(sw);
+			pw.println();
 
-            pw.println("@" + entity.importType(Generated.class.getName()) + "(\"JPA MetaModel for " + entity.getQualifiedName() + "\")");
+			pw.println( entity.generateImports() );
 
-            pw.println("@" + entity.importType("javax.persistence.metamodel.TypesafeMetamodel") + "(" +  entity.getSimpleName() + ".class)");
+			pw.println( body );
 
-            pw.println("public abstract class " + entity.getSimpleName() + "_" + " {");
+			pw.flush();
+			pw.close();
 
-            pw.println();
+		}
+		catch ( FilerException filerEx ) {
+			processingEnv.getMessager().printMessage(
+					Diagnostic.Kind.ERROR,
+					"Problem with Processing Environment Filer: "
+							+ filerEx.getMessage()
+			);
+		}
+		catch ( IOException ioEx ) {
+			processingEnv.getMessager().printMessage(
+					Diagnostic.Kind.ERROR,
+					"Problem opening file to write MetaModel for " + entity.getSimpleName()
+							+ ioEx.getMessage()
+			);
+		}
+	}
 
-            List<IMetaMember> members = entity.getMembers();
+	/**
+	 * Generate everything after import statements
+	 *
+	 * @return body content
+	 */
+	private StringBuffer generateBody(IMetaEntity entity) {
 
-            for (IMetaMember metaMember : members) {
-                pw.println("	" + metaMember.getDeclarationString());
-            }
-            pw.println();
-            pw.println("}");
-            return sw.getBuffer();
-        } finally {
-            if (pw != null) pw.close();
-        }
-    }
+		StringWriter sw = new StringWriter();
+		PrintWriter pw = null;
+		try {
+
+			pw = new PrintWriter( sw );
+
+			pw.println( "@" + entity.importType( Generated.class.getName() ) + "(\"JPA MetaModel for " + entity.getQualifiedName() + "\")" );
+
+			pw.println( "@" + entity.importType( "javax.persistence.metamodel.TypesafeMetamodel" ) + "(" + entity.getSimpleName() + ".class)" );
+
+			pw.println( "public abstract class " + entity.getSimpleName() + "_" + " {" );
+
+			pw.println();
+
+			List<IMetaMember> members = entity.getMembers();
+
+			for ( IMetaMember metaMember : members ) {
+				pw.println( "	" + metaMember.getDeclarationString() );
+			}
+			pw.println();
+			pw.println( "}" );
+			return sw.getBuffer();
+		}
+		finally {
+			if ( pw != null ) {
+				pw.close();
+			}
+		}
+	}
 }

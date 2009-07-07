@@ -8,21 +8,21 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-@Entity
+//@Entity
 public class Order {
 	
-	@Id
+	//@Id
 	long id;
 	
-	@OneToMany
+	//@OneToMany
 	Set<Item> items;
 	
 	boolean filled;
 	Date date;
 	
-	@OneToMany
+	//@OneToMany
 	List<String> notes;
 	
-	@ManyToOne
+	//@ManyToOne
 	Shop shop;
 }
