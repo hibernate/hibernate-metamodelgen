@@ -64,6 +64,8 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	private static final String MAPPED_SUPERCLASS_ANN = MappedSuperclass.class.getName();
 	private static final String EMBEDDABLE_ANN = Embeddable.class.getName();
 
+	private Context context = new Context();
+
 
 	public void init(ProcessingEnvironment env) {
 		super.init( env );
@@ -162,7 +164,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			String fullyQualifiedClassName = packageName + "." + entity.getClazz();
 			Elements utils = processingEnv.getElementUtils();
 			XmlMetaEntity metaEntity = new XmlMetaEntity(
-					entity, packageName, utils.getTypeElement( fullyQualifiedClassName )
+					entity, packageName, utils.getTypeElement( fullyQualifiedClassName ), context
 			);
 
 			if ( metaEntities.containsKey( fullyQualifiedClassName ) ) {
@@ -208,7 +210,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 						|| annotationType.equals( MAPPED_SUPERCLASS_ANN )
 						|| annotationType.equals( EMBEDDABLE_ANN )
 					) ) {
-				MetaEntity metaEntity = new MetaEntity( processingEnv, ( TypeElement ) element );
+				MetaEntity metaEntity = new MetaEntity( processingEnv, ( TypeElement ) element, context );
 
 				// TODO instead of just adding the entity we have to do some merging.
 				metaEntities.put( metaEntity.getQualifiedName(), metaEntity );

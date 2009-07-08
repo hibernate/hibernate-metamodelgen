@@ -30,6 +30,7 @@ import org.hibernate.jpa.metamodel.ap.IMetaEntity;
 import org.hibernate.jpa.metamodel.ap.IMetaAttribute;
 import org.hibernate.jpa.metamodel.ap.ImportContext;
 import org.hibernate.jpa.metamodel.ap.ImportContextImpl;
+import org.hibernate.jpa.metamodel.ap.Context;
 import org.hibernate.jpa.metamodel.xml.jaxb.Attributes;
 import org.hibernate.jpa.metamodel.xml.jaxb.Basic;
 import org.hibernate.jpa.metamodel.xml.jaxb.ElementCollection;
@@ -63,8 +64,10 @@ public class XmlMetaEntity implements IMetaEntity {
 	final private List<IMetaAttribute> members = new ArrayList<IMetaAttribute>();
 
 	private TypeElement element;
+	private Context context;
 
-	public XmlMetaEntity(Entity ormEntity, String packageName, TypeElement element) {
+	public XmlMetaEntity(Entity ormEntity, String packageName, TypeElement element, Context context) {
+		this.context = context;
 		this.clazzName = ormEntity.getClazz();
 		this.packageName = packageName;
 		importContext = new ImportContextImpl( getPackageName() );

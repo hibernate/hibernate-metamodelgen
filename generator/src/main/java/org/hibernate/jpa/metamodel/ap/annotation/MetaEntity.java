@@ -19,13 +19,19 @@ import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.SimpleTypeVisitor6;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Id;
+import javax.persistence.AccessType;
+import javax.persistence.Entity;
+import javax.persistence.MappedSuperclass;
+import javax.persistence.Transient;
 import javax.tools.Diagnostic.Kind;
+import javax.tools.Diagnostic;
 
 import org.hibernate.jpa.metamodel.ap.IMetaEntity;
 import org.hibernate.jpa.metamodel.ap.IMetaAttribute;
 import org.hibernate.jpa.metamodel.ap.ImportContext;
 import org.hibernate.jpa.metamodel.ap.ImportContextImpl;
 import org.hibernate.jpa.metamodel.ap.TypeUtils;
+import org.hibernate.jpa.metamodel.ap.Context;
 
 public class MetaEntity implements IMetaEntity {
 
@@ -33,11 +39,13 @@ public class MetaEntity implements IMetaEntity {
 	final protected ProcessingEnvironment pe;
 
 	final ImportContext importContext;
+	private Context context;
 
-	public MetaEntity(ProcessingEnvironment pe, TypeElement element) {
+	public MetaEntity(ProcessingEnvironment pe, TypeElement element, Context context) {
 		this.element = element;
 		this.pe = pe;
 		importContext = new ImportContextImpl( getPackageName() );
+		this.context = context;
 	}
 
 	public String getSimpleName() {
@@ -66,7 +74,7 @@ public class MetaEntity implements IMetaEntity {
 			List<? extends Element> myMembers = ElementFilter.fieldsIn( element.getEnclosedElements() );
 
 			pe.getMessager()
-					.printMessage( Kind.NOTE, "Scanning " + myMembers.size() + " field s for " + element.toString() );
+					.printMessage( Kind.NOTE, "Scanning " + myMembers.size() + " fields for " + element.toString() );
 
 			for ( Element mymember : myMembers ) {
 
@@ -75,15 +83,12 @@ public class MetaEntity implements IMetaEntity {
 					members.add( result );
 				}
 				else {
-					pe.getMessager()
-							.printMessage( Kind.WARNING, "Could not find valid info for JPA property", mymember );
+					//pe.getMessager().printMessage( Kind.WARNING, "Could not find valid info for JPA property", mymember );
 				}
 			}
 
 		}
 		else {
-
-
 			List<? extends Element> myMembers = ElementFilter.methodsIn( element.getEnclosedElements() );
 
 			pe.getMessager()
@@ -107,29 +112,71 @@ public class MetaEntity implements IMetaEntity {
 		return members;
 	}
 
-
-	//TODO: Find more efficient way to identify wether we should use fields or properties
 	private boolean useFields() {
-		List<? extends Element> myMembers = element.getEnclosedElements();
-		for ( Element element : myMembers ) {
+		AccessType accessType = getAccessTypeForClass( element );
+		if (accessType != null) return accessType == AccessType.FIELD;
+
+		//we dont' know
+		//if an enity go up
+		//TODO if a superclass go down till you find entity
+		//TODO if in the superclass case you're still unsure, go up
+		TypeElement superClass = element;
+		do {
+			superClass = TypeUtils.getSuperclass( superClass );
+			if (superClass != null) {
+				if ( superClass.getAnnotation( Entity.class ) != null ) {
+					//FIXME make it work for XML
+					accessType = getAccessTypeForClass(superClass);
+					if ( accessType != null ) return accessType == AccessType.FIELD;
+				}
+				else if ( superClass.getAnnotation( MappedSuperclass.class ) != null ) {
+					accessType = getAccessTypeForClass(superClass);
+					if ( accessType != null ) return accessType == AccessType.FIELD;
+				}
+			}
+		}
+		while ( superClass != null );
+		//this is a subclass so caching is OK
+		context.addAccessType( this.element, AccessType.PROPERTY );
+		return false;
+	}
+
+	private AccessType getAccessTypeForClass(TypeElement searchedElement) {
+		pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "check class" + searchedElement );
+		final AccessType accessType = context.getAccessTypes().get( searchedElement );
+		if ( accessType != null ) {
+			pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "Found in cache" + searchedElement + ":" + accessType );
+			return accessType;
+		}
+
+		List<? extends Element> myMembers = searchedElement.getEnclosedElements();
+		for ( Element subElement : myMembers ) {
 			List<? extends AnnotationMirror> entityAnnotations =
-					pe.getElementUtils().getAllAnnotationMirrors( element );
+					pe.getElementUtils().getAllAnnotationMirrors( subElement );
 
 			for ( Object entityAnnotation : entityAnnotations ) {
 				AnnotationMirror annotationMirror = ( AnnotationMirror ) entityAnnotation;
 
 				final String annotationType = annotationMirror.getAnnotationType().toString();
 
-				if ( annotationType.equals( Id.class.getName() ) ||
-						annotationType.equals( EmbeddedId.class.getName() ) ) {
-					if ( element.getKind() == ElementKind.FIELD ) {
-						return true;
+				if ( annotationType.equals( Id.class.getName() )
+						|| annotationType.equals( EmbeddedId.class.getName() ) ) {
+					pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "Found id on" + searchedElement );
+					if ( subElement.getKind() == ElementKind.FIELD ) {
+						context.addAccessType( searchedElement, AccessType.FIELD );
+						pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "access type " + searchedElement + ":" + accessType );
+						return AccessType.FIELD;
+					}
+					else {
+						context.addAccessType( searchedElement, AccessType.PROPERTY );
+						pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "access type " + searchedElement + ":" + accessType );
+						return AccessType.PROPERTY;
 					}
 				}
 			}
 		}
-
-		return false;
+		pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "No access type found: " + searchedElement );
+		return null;
 	}
 
 	@Override
@@ -165,25 +212,34 @@ public class MetaEntity implements IMetaEntity {
 
 		@Override
 		public MetaAttribute visitPrimitive(PrimitiveType t, Element p) {
-			return new MetaSingleAttribute( parent, p, TypeUtils.toTypeString( t ) );
+			if ( p.getAnnotation( Transient.class ) == null ) {
+				return new MetaSingleAttribute( parent, p, TypeUtils.toTypeString( t ) );
+			}
+			else {
+				return null;
+			}
 		}
 
 
 		@Override
 		public MetaAttribute visitDeclared(DeclaredType t, Element p) {
-			TypeElement e = ( TypeElement ) pe.getTypeUtils().asElement( t );
-
-			String collection = COLLECTIONS.get( e.getQualifiedName().toString() ); // WARNING: .toString() is necessary here since Name equals does not compare to String
-			if ( collection != null ) {
-				if ( collection.equals( "javax.persistence.metamodel.MapAttribute" ) ) {
-					return new MetaMap( parent, p, collection, getKeyType( t ), getElementType( t ) );
+			if ( p.getAnnotation( Transient.class ) == null ) {
+				TypeElement e = ( TypeElement ) pe.getTypeUtils().asElement( t );
+				String collection = COLLECTIONS.get( e.getQualifiedName().toString() ); // WARNING: .toString() is necessary here since Name equals does not compare to String
+				if ( collection != null ) {
+					if ( collection.equals( "javax.persistence.metamodel.MapAttribute" ) ) {
+						return new MetaMap( parent, p, collection, getKeyType( t ), getElementType( t ) );
+					}
+					else {
+						return new MetaCollection( parent, p, collection, getElementType( t ) );
+					}
 				}
 				else {
-					return new MetaCollection( parent, p, collection, getElementType( t ) );
+					return new MetaSingleAttribute( parent, p, e.getQualifiedName().toString() );
 				}
 			}
 			else {
-				return new MetaSingleAttribute( parent, p, e.getQualifiedName().toString() );
+				return null;
 			}
 		}
 

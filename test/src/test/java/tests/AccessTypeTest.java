@@ -13,13 +13,23 @@ import org.testng.Assert;
 @Test
 public class AccessTypeTest {
 	@Test
-	public void testDefaultAccessType() throws Exception{
-		Class<?> user_ = Class.forName( "model.User_" );
+	public void testDefaultAccessTypeOnEntity() throws Exception{
+		absenceOfField( "model.User_", "nonPersistent" );
+	}
+
+	@Test
+	public void testDefaultAccessTypeForSubclassOfEntity() throws Exception{
+		absenceOfField( "model.Customer_", "nonPersistent" );
+	}
+
+
+	private void absenceOfField(String className, String fieldName) throws ClassNotFoundException {
+		Class<?> user_ = Class.forName( className );
 		try {
-			final Field nonPersistentField = user_.getField( "nonPersistent" );
+
+			final Field nonPersistentField = user_.getField( fieldName );
 			Assert.fail( "field should not be persistent" );
 		}
 		catch (NoSuchFieldException e) {}
-
 	}
 }
