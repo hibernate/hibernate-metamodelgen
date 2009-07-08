@@ -1,3 +1,4 @@
+// $Id:$
 package org.hibernate.jpa.metamodel.ap;
 
 import java.io.IOException;
@@ -39,6 +40,12 @@ import org.hibernate.jpa.metamodel.xml.jaxb.EntityMappings;
 import org.hibernate.jpa.metamodel.xml.jaxb.ObjectFactory;
 import org.hibernate.jpa.metamodel.xml.jaxb.Persistence;
 
+/**
+ * Main annotation processor.
+ *
+ * @author Max Andersen
+ * @author Hardy Ferentschik
+ */
 //@SupportedAnnotationTypes("javax.persistence.Entity")
 @SupportedAnnotationTypes("*")
 @SupportedSourceVersion(RELEASE_6)
@@ -60,11 +67,8 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 						   final RoundEnvironment roundEnvironment) {
 
 		if ( roundEnvironment.processingOver() ) {
-			//assuming that when processing is over, we are done and clear resources like ORM parsing
-			//we could keep some ORM parsing in memory but how to detect that a file has changed / not changed?
-			xmlProcessed = false;
-			metaEntities.clear();
-			processingEnv.getMessager().printMessage( Diagnostic.Kind.NOTE, "Clear ORM processing resources" );
+			processingEnv.getMessager()
+					.printMessage( Diagnostic.Kind.NOTE, "Finished processing" );
 			return false;
 		}
 
@@ -74,12 +78,13 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			return true;
 		}
 
-		writeProcessingDiagnostics( annotations, roundEnvironment );
-
-		parsePersistenceXml();
+		if ( !xmlProcessed ) {
+			parsePersistenceXml();
+		}
 
 		Set<? extends Element> elements = roundEnvironment.getRootElements();
 		for ( Element element : elements ) {
+			processingEnv.getMessager().printMessage( Diagnostic.Kind.NOTE, "Processing " + element.toString() );
 			handleRootElementAnnotationMirrors( element );
 		}
 
@@ -96,13 +101,10 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	}
 
 	private void parsePersistenceXml() {
-		if ( xmlProcessed ) {
-			return;
-		}
-
 		Persistence persistence = parseXml( PERSISTENCE_XML, Persistence.class );
+		if ( persistence != null )
 
-		if ( persistence != null ) {
+		{
 			List<Persistence.PersistenceUnit> persistenceUnits = persistence.getPersistenceUnit();
 			for ( Persistence.PersistenceUnit unit : persistenceUnits ) {
 				List<String> mappingFiles = unit.getMappingFile();
@@ -116,7 +118,6 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 
 	private void parsingOrmXml(String resource) {
-
 		EntityMappings mappings = parseXml( resource, EntityMappings.class );
 		if ( mappings == null ) {
 			return;
