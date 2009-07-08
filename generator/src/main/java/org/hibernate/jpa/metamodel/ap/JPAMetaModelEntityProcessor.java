@@ -150,13 +150,39 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		if ( mappings == null ) {
 			return;
 		}
-		Collection<Entity> entities = mappings.getEntity();
+
+		parseEntities( mappings );
+		parseEmbeddable( mappings );
+	}
+
+	private void parseEntities(EntityMappings mappings) {
 		String packageName = mappings.getPackage();
+		Collection<Entity> entities = mappings.getEntity();
 		for ( Entity entity : entities ) {
 			String fullyQualifiedClassName = packageName + "." + entity.getClazz();
 			Elements utils = processingEnv.getElementUtils();
 			XmlMetaEntity metaEntity = new XmlMetaEntity(
 					entity, packageName, utils.getTypeElement( fullyQualifiedClassName )
+			);
+
+			if ( metaEntities.containsKey( fullyQualifiedClassName ) ) {
+				processingEnv.getMessager().printMessage(
+						Diagnostic.Kind.WARNING,
+						fullyQualifiedClassName + " was already processed once. Skipping second occurance."
+				);
+			}
+			metaEntities.put( fullyQualifiedClassName, metaEntity );
+		}
+	}
+
+	private void parseEmbeddable(EntityMappings mappings) {
+		String packageName = mappings.getPackage();
+		Collection<org.hibernate.jpa.metamodel.xml.jaxb.Embeddable> embeddables = mappings.getEmbeddable();
+		for ( org.hibernate.jpa.metamodel.xml.jaxb.Embeddable embeddable : embeddables ) {
+			String fullyQualifiedClassName = packageName + "." + embeddable.getClazz();
+			Elements utils = processingEnv.getElementUtils();
+			XmlMetaEntity metaEntity = new XmlMetaEntity(
+					embeddable, packageName, utils.getTypeElement( fullyQualifiedClassName )
 			);
 
 			if ( metaEntities.containsKey( fullyQualifiedClassName ) ) {

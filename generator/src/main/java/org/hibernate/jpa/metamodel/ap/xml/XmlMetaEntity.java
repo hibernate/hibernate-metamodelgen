@@ -37,6 +37,8 @@ import org.hibernate.jpa.metamodel.xml.jaxb.Entity;
 import org.hibernate.jpa.metamodel.xml.jaxb.Id;
 import org.hibernate.jpa.metamodel.xml.jaxb.ManyToOne;
 import org.hibernate.jpa.metamodel.xml.jaxb.OneToMany;
+import org.hibernate.jpa.metamodel.xml.jaxb.Embeddable;
+import org.hibernate.jpa.metamodel.xml.jaxb.EmbeddableAttributes;
 
 /**
  * @author Hardy Ferentschik
@@ -52,7 +54,7 @@ public class XmlMetaEntity implements IMetaEntity {
 		COLLECTIONS.put( "java.util.Map", "javax.persistence.metamodel.MapAttribute" );
 	}
 
-	final private Entity ormEntity;
+	final private String clazzName;
 
 	final private String packageName;
 
@@ -63,7 +65,7 @@ public class XmlMetaEntity implements IMetaEntity {
 	private TypeElement element;
 
 	public XmlMetaEntity(Entity ormEntity, String packageName, TypeElement element) {
-		this.ormEntity = ormEntity;
+		this.clazzName = ormEntity.getClazz();
 		this.packageName = packageName;
 		importContext = new ImportContextImpl( getPackageName() );
 		this.element = element;
@@ -96,8 +98,40 @@ public class XmlMetaEntity implements IMetaEntity {
 		}
 	}
 
+	public XmlMetaEntity(Embeddable embeddable, String packageName, TypeElement element) {
+		this.clazzName = embeddable.getClazz();
+		this.packageName = packageName;
+		importContext = new ImportContextImpl( getPackageName() );
+		this.element = element;
+		EmbeddableAttributes attributes = embeddable.getAttributes();
+
+		XmlMetaSingleAttribute attribute;
+		for ( Basic basic : attributes.getBasic() ) {
+			attribute = new XmlMetaSingleAttribute( this, basic.getName(), getType( basic.getName() ) );
+			members.add( attribute );
+		}
+
+		for ( ManyToOne manyToOne : attributes.getManyToOne() ) {
+			attribute = new XmlMetaSingleAttribute( this, manyToOne.getName(), getType( manyToOne.getName() ) );
+			members.add( attribute );
+		}
+
+		XmlMetaCollection metaCollection;
+		for ( OneToMany oneToMany : attributes.getOneToMany() ) {
+			String[] types = getCollectionType( oneToMany.getName() );
+			metaCollection = new XmlMetaCollection( this, oneToMany.getName(), types[0], types[1] );
+			members.add( metaCollection );
+		}
+
+		for ( ElementCollection collection : attributes.getElementCollection() ) {
+			String[] types = getCollectionType( collection.getName() );
+			metaCollection = new XmlMetaCollection( this, collection.getName(), types[0], types[1] );
+			members.add( metaCollection );
+		}
+	}
+
 	public String getSimpleName() {
-		return ormEntity.getClazz();
+		return clazzName;
 	}
 
 	public String getQualifiedName() {
