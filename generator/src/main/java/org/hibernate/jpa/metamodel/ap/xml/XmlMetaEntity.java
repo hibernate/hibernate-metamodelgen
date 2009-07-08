@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 /*
 * JBoss, Home of Professional Open Source
 * Copyright 2008, Red Hat Middleware LLC, and individual contributors
@@ -60,13 +60,13 @@ public class XmlMetaEntity implements IMetaEntity {
 
 	final private List<IMetaAttribute> members = new ArrayList<IMetaAttribute>();
 
-	private TypeElement type;
+	private TypeElement element;
 
-	public XmlMetaEntity(Entity ormEntity, String packageName, TypeElement type) {
+	public XmlMetaEntity(Entity ormEntity, String packageName, TypeElement element) {
 		this.ormEntity = ormEntity;
 		this.packageName = packageName;
 		importContext = new ImportContextImpl( getPackageName() );
-		this.type = type;
+		this.element = element;
 		Attributes attributes = ormEntity.getAttributes();
 		Id id = attributes.getId().get( 0 );
 		XmlMetaSingleAttribute attribute = new XmlMetaSingleAttribute( this, id.getName(), getType( id.getName() ) );
@@ -128,9 +128,13 @@ public class XmlMetaEntity implements IMetaEntity {
 		return importType( qualifiedName.toString() );
 	}
 
+	public TypeElement getTypeElement() {
+		return element;
+	}
+
 	private String[] getCollectionType(String propertyName) {
 		String types[] = new String[2];
-		for ( Element elem : type.getEnclosedElements() ) {
+		for ( Element elem : element.getEnclosedElements() ) {
 			if ( elem.getSimpleName().toString().equals( propertyName ) ) {
 				DeclaredType type = ( ( DeclaredType ) elem.asType() );
 				types[0] = type.getTypeArguments().get( 0 ).toString();
@@ -143,7 +147,7 @@ public class XmlMetaEntity implements IMetaEntity {
 	// TODO - so far only prototype. Only tested for the Order orm.xml
 	private String getType(String propertyName) {
 		String typeName = null;
-		for ( Element elem : type.getEnclosedElements() ) {
+		for ( Element elem : element.getEnclosedElements() ) {
 			if ( elem.getSimpleName().toString().equals( propertyName ) ) {
 				switch ( elem.asType().getKind() ) {
 					case INT: {
@@ -177,7 +181,7 @@ public class XmlMetaEntity implements IMetaEntity {
 	public String toString() {
 		final StringBuilder sb = new StringBuilder();
 		sb.append( "XmlMetaEntity" );
-		sb.append( "{type=" ).append( type );
+		sb.append( "{type=" ).append( element );
 		sb.append( '}' );
 		return sb.toString();
 	}

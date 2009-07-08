@@ -24,6 +24,9 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.DeclaredType;
 import javax.persistence.Embeddable;
 import javax.persistence.MappedSuperclass;
 import javax.tools.Diagnostic;
@@ -175,7 +178,10 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			final String annotationType = mirror.getAnnotationType().toString();
 
 			if ( element.getKind() == ElementKind.CLASS &&
-					annotationType.equals( ENTITY_ANN ) ) {
+					( annotationType.equals( ENTITY_ANN )
+						|| annotationType.equals( MAPPED_SUPERCLASS_ANN )
+						|| annotationType.equals( EMBEDDABLE_ANN )
+					) ) {
 				MetaEntity metaEntity = new MetaEntity( processingEnv, ( TypeElement ) element );
 
 				// TODO instead of just adding the entity we have to do some merging.
@@ -243,7 +249,9 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 			pw.println( "@" + entity.importType( "javax.persistence.metamodel.StaticMetamodel" ) + "(" + entity.getSimpleName() + ".class)" );
 
-			pw.println( "public abstract class " + entity.getSimpleName() + "_" + " {" );
+
+
+			printClassDeclaration( entity, pw );
 
 			pw.println();
 
@@ -261,6 +269,24 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 				pw.close();
 			}
 		}
+	}
+
+	private void printClassDeclaration(IMetaEntity entity, PrintWriter pw) {
+		pw.print( "public abstract class " + entity.getSimpleName() + "_" );
+
+		final TypeMirror superClass = entity.getTypeElement().getSuperclass();
+		//superclass of Object is of NoType which returns some other kind
+		String superclassDeclaration = "";
+		if (superClass.getKind() == TypeKind.DECLARED ) {
+			//F..king Ch...t Have those people used their horrible APIs even once?
+			final Element superClassElement = ( ( DeclaredType ) superClass ).asElement();
+			String superClassName = ( ( TypeElement ) superClassElement ).getQualifiedName().toString();
+			if ( metaEntities.containsKey( superClassName ) ) {
+				pw.print( " extends " + superClassName + "_ "  );
+			}
+		}
+
+		pw.println( "{" );
 	}
 
 	private InputStream getInputStreamForResource(String resource) {

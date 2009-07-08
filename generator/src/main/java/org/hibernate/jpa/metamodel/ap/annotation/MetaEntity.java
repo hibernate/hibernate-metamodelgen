@@ -220,6 +220,10 @@ public class MetaEntity implements IMetaEntity {
 		return importType( qualifiedName.toString() );
 	}
 
+	public TypeElement getTypeElement() {
+		return element;
+	}
+
 	private String getKeyType(DeclaredType t) {
 		return t.getTypeArguments().get( 0 ).toString();
 	}

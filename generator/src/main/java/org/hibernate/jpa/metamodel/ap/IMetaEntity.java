@@ -18,6 +18,7 @@
 package org.hibernate.jpa.metamodel.ap;
 
 import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
 import java.util.List;
 
 /**
@@ -39,4 +40,6 @@ public interface IMetaEntity extends ImportContext {
     String staticImport(String fqcn, String member);
 
     String importType(Name qualifiedName);
+
+	TypeElement getTypeElement();
 }
