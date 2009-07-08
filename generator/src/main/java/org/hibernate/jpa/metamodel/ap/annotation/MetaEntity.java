@@ -54,7 +54,7 @@ public class MetaEntity implements IMetaEntity {
 
 	public String getPackageName() {
 		PackageElement packageOf = pe.getElementUtils().getPackageOf( element );
-		return pe.getElementUtils().getName( packageOf.getQualifiedName() + ".metamodel" ).toString();
+		return pe.getElementUtils().getName( packageOf.getQualifiedName() ).toString();
 	}
 
 	public List<IMetaAttribute> getMembers() {

@@ -105,7 +105,7 @@ public class XmlMetaEntity implements IMetaEntity {
 	}
 
 	public String getPackageName() {
-		return packageName + ".metamodel";
+		return packageName;
 	}
 
 	public List<IMetaAttribute> getMembers() {
