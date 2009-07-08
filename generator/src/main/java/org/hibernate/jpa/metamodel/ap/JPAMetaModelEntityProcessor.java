@@ -57,18 +57,16 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	private static final String PATH_SEPARATOR = "/";
 	private static final String PERSISTENCE_XML = "/META-INF/persistence.xml";
 	private static final Boolean ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS = Boolean.TRUE;
-
-	private final Map<String, IMetaEntity> metaEntities = new HashMap<String, IMetaEntity>();
-	private boolean xmlProcessed = false;
 	private static final String ENTITY_ANN = javax.persistence.Entity.class.getName();
 	private static final String MAPPED_SUPERCLASS_ANN = MappedSuperclass.class.getName();
 	private static final String EMBEDDABLE_ANN = Embeddable.class.getName();
 
-	private Context context = new Context();
-
+	private boolean xmlProcessed = false;
+	private Context context;
 
 	public void init(ProcessingEnvironment env) {
 		super.init( env );
+		context = new Context(env);
 		processingEnv.getMessager().printMessage( Diagnostic.Kind.NOTE, "Init Processor " + this );
 	}
 
@@ -107,10 +105,21 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	}
 
 	private void createMetaModelClasses() {
-		for ( IMetaEntity entity : metaEntities.values() ) {
+		for ( IMetaEntity entity : context.getMetaEntitiesToProcess().values() ) {
 			processingEnv.getMessager()
 					.printMessage( Diagnostic.Kind.NOTE, "Writing meta model for " + entity );
-			writeFile( entity );
+			ClassWriter.writeFile( entity, processingEnv, context );
+		}
+
+		//process left over, in most cases is empty
+		for ( String className : context.getElementsAlreadyProcessed() ) {
+			context.getMetaSuperclassAndEmbeddableToProcess().remove( className );
+		}
+
+		for ( IMetaEntity entity : context.getMetaSuperclassAndEmbeddableToProcess().values() ) {
+			processingEnv.getMessager()
+					.printMessage( Diagnostic.Kind.NOTE, "Writing meta model for " + entity );
+			ClassWriter.writeFile( entity, processingEnv, context );
 		}
 	}
 
@@ -167,13 +176,13 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 					entity, packageName, utils.getTypeElement( fullyQualifiedClassName ), context
 			);
 
-			if ( metaEntities.containsKey( fullyQualifiedClassName ) ) {
+			if ( context.getMetaEntitiesToProcess().containsKey( fullyQualifiedClassName ) ) {
 				processingEnv.getMessager().printMessage(
 						Diagnostic.Kind.WARNING,
 						fullyQualifiedClassName + " was already processed once. Skipping second occurance."
 				);
 			}
-			metaEntities.put( fullyQualifiedClassName, metaEntity );
+			context.getMetaEntitiesToProcess().put( fullyQualifiedClassName, metaEntity );
 		}
 	}
 
@@ -187,13 +196,13 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 					embeddable, packageName, utils.getTypeElement( fullyQualifiedClassName )
 			);
 
-			if ( metaEntities.containsKey( fullyQualifiedClassName ) ) {
+			if ( context.getMetaSuperclassAndEmbeddableToProcess().containsKey( fullyQualifiedClassName ) ) {
 				processingEnv.getMessager().printMessage(
 						Diagnostic.Kind.WARNING,
 						fullyQualifiedClassName + " was already processed once. Skipping second occurance."
 				);
 			}
-			metaEntities.put( fullyQualifiedClassName, metaEntity );
+			context.getMetaSuperclassAndEmbeddableToProcess().put( fullyQualifiedClassName, metaEntity );
 		}
 	}
 
@@ -205,116 +214,21 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		for ( AnnotationMirror mirror : annotationMirrors ) {
 			final String annotationType = mirror.getAnnotationType().toString();
 
-			if ( element.getKind() == ElementKind.CLASS &&
-					( annotationType.equals( ENTITY_ANN )
-						|| annotationType.equals( MAPPED_SUPERCLASS_ANN )
-						|| annotationType.equals( EMBEDDABLE_ANN )
-					) ) {
-				MetaEntity metaEntity = new MetaEntity( processingEnv, ( TypeElement ) element, context );
+			if ( element.getKind() == ElementKind.CLASS ) {
+				if ( annotationType.equals( ENTITY_ANN ) ) {
+					MetaEntity metaEntity = new MetaEntity( processingEnv, ( TypeElement ) element, context );
+					// TODO instead of just adding the entity we have to do some merging.
+					context.getMetaEntitiesToProcess().put( metaEntity.getQualifiedName(), metaEntity );
+				}
+				else if ( annotationType.equals( MAPPED_SUPERCLASS_ANN )
+						|| annotationType.equals( EMBEDDABLE_ANN ) ) {
+					MetaEntity metaEntity = new MetaEntity( processingEnv, ( TypeElement ) element, context );
 
-				// TODO instead of just adding the entity we have to do some merging.
-				metaEntities.put( metaEntity.getQualifiedName(), metaEntity );
+					// TODO instead of just adding the entity we have to do some merging.
+					context.getMetaSuperclassAndEmbeddableToProcess().put( metaEntity.getQualifiedName(), metaEntity );
+				}
 			}
 		}
-	}
-	private void writeFile(IMetaEntity entity) {
-
-		try {
-			String metaModelPackage = entity.getPackageName();
-
-			StringBuffer body = generateBody( entity );
-
-			FileObject fo = processingEnv.getFiler().createSourceFile(
-					metaModelPackage + "." + entity.getSimpleName() + "_"
-			);
-			OutputStream os = fo.openOutputStream();
-			PrintWriter pw = new PrintWriter( os );
-
-			pw.println( "package " + metaModelPackage + ";" );
-
-			pw.println();
-
-			pw.println( entity.generateImports() );
-
-			pw.println( body );
-
-			pw.flush();
-			pw.close();
-
-		}
-		catch ( FilerException filerEx ) {
-			processingEnv.getMessager().printMessage(
-					Diagnostic.Kind.ERROR,
-					"Problem with Processing Environment Filer: "
-							+ filerEx.getMessage()
-			);
-		}
-		catch ( IOException ioEx ) {
-			processingEnv.getMessager().printMessage(
-					Diagnostic.Kind.ERROR,
-					"Problem opening file to write MetaModel for " + entity.getSimpleName()
-							+ ioEx.getMessage()
-			);
-		}
-	}
-
-	/**
-	 * Generate everything after import statements.
-	 *
-	 * @param entity The meta entity for which to write the body
-	 *
-	 * @return body content
-	 */
-	private StringBuffer generateBody(IMetaEntity entity) {
-
-		StringWriter sw = new StringWriter();
-		PrintWriter pw = null;
-		try {
-
-			pw = new PrintWriter( sw );
-
-			pw.println( "@" + entity.importType( Generated.class.getName() ) + "(\"JPA MetaModel for " + entity.getQualifiedName() + "\")" );
-
-			pw.println( "@" + entity.importType( "javax.persistence.metamodel.StaticMetamodel" ) + "(" + entity.getSimpleName() + ".class)" );
-
-
-
-			printClassDeclaration( entity, pw );
-
-			pw.println();
-
-			List<IMetaAttribute> members = entity.getMembers();
-
-			for ( IMetaAttribute metaMember : members ) {
-				pw.println( "	" + metaMember.getDeclarationString() );
-			}
-			pw.println();
-			pw.println( "}" );
-			return sw.getBuffer();
-		}
-		finally {
-			if ( pw != null ) {
-				pw.close();
-			}
-		}
-	}
-
-	private void printClassDeclaration(IMetaEntity entity, PrintWriter pw) {
-		pw.print( "public abstract class " + entity.getSimpleName() + "_" );
-
-		final TypeMirror superClass = entity.getTypeElement().getSuperclass();
-		//superclass of Object is of NoType which returns some other kind
-		String superclassDeclaration = "";
-		if (superClass.getKind() == TypeKind.DECLARED ) {
-			//F..king Ch...t Have those people used their horrible APIs even once?
-			final Element superClassElement = ( ( DeclaredType ) superClass ).asElement();
-			String superClassName = ( ( TypeElement ) superClassElement ).getQualifiedName().toString();
-			if ( metaEntities.containsKey( superClassName ) ) {
-				pw.print( " extends " + superClassName + "_"  );
-			}
-		}
-
-		pw.println( " {" );
 	}
 
 	private InputStream getInputStreamForResource(String resource) {

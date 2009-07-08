@@ -23,6 +23,8 @@ import javax.persistence.AccessType;
 import javax.persistence.Entity;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
+import javax.persistence.Embedded;
+import javax.persistence.Embeddable;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.Diagnostic;
 
@@ -40,12 +42,18 @@ public class MetaEntity implements IMetaEntity {
 
 	final ImportContext importContext;
 	private Context context;
+	private AccessType defaultAccessTypeForHierarchy;
 
 	public MetaEntity(ProcessingEnvironment pe, TypeElement element, Context context) {
 		this.element = element;
 		this.pe = pe;
 		importContext = new ImportContextImpl( getPackageName() );
 		this.context = context;
+	}
+
+	public MetaEntity(ProcessingEnvironment pe, TypeElement element, Context context, AccessType accessType) {
+		this(pe, element, context);
+		this.defaultAccessTypeForHierarchy = accessType;
 	}
 
 	public String getSimpleName() {
@@ -113,8 +121,17 @@ public class MetaEntity implements IMetaEntity {
 	}
 
 	private boolean useFields() {
+		//default strategy has more power than local discovery
+		if ( this.defaultAccessTypeForHierarchy != null ) {
+			return defaultAccessTypeForHierarchy == AccessType.FIELD;
+		}
+
+		//get local strategy
 		AccessType accessType = getAccessTypeForClass( element );
-		if (accessType != null) return accessType == AccessType.FIELD;
+		if (accessType != null) {
+			this.defaultAccessTypeForHierarchy = accessType;
+			return accessType == AccessType.FIELD;
+		}
 
 		//we dont' know
 		//if an enity go up
@@ -127,18 +144,25 @@ public class MetaEntity implements IMetaEntity {
 				if ( superClass.getAnnotation( Entity.class ) != null ) {
 					//FIXME make it work for XML
 					accessType = getAccessTypeForClass(superClass);
-					if ( accessType != null ) return accessType == AccessType.FIELD;
+					if ( accessType != null ) {
+						this.defaultAccessTypeForHierarchy = accessType;
+						return accessType == AccessType.FIELD;
+					}
 				}
 				else if ( superClass.getAnnotation( MappedSuperclass.class ) != null ) {
 					accessType = getAccessTypeForClass(superClass);
-					if ( accessType != null ) return accessType == AccessType.FIELD;
+					if ( accessType != null ) {
+						this.defaultAccessTypeForHierarchy = accessType;
+						return accessType == AccessType.FIELD;
+					}
 				}
 			}
 		}
 		while ( superClass != null );
 		//this is a subclass so caching is OK
+		this.defaultAccessTypeForHierarchy = accessType;
 		context.addAccessType( this.element, AccessType.PROPERTY );
-		return false;
+		return false; //default to getter
 	}
 
 	private AccessType getAccessTypeForClass(TypeElement searchedElement) {
@@ -175,7 +199,6 @@ public class MetaEntity implements IMetaEntity {
 				}
 			}
 		}
-		pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "No access type found: " + searchedElement );
 		return null;
 	}
 
@@ -223,21 +246,28 @@ public class MetaEntity implements IMetaEntity {
 
 
 		@Override
-		public MetaAttribute visitDeclared(DeclaredType t, Element p) {
+		public MetaAttribute visitDeclared(DeclaredType t, Element element) {
 			//FIXME consider XML
-			if ( p.getAnnotation( Transient.class ) == null ) {
-				TypeElement e = ( TypeElement ) pe.getTypeUtils().asElement( t );
-				String collection = COLLECTIONS.get( e.getQualifiedName().toString() ); // WARNING: .toString() is necessary here since Name equals does not compare to String
+			if ( element.getAnnotation( Transient.class ) == null ) {
+				TypeElement returnedElement = ( TypeElement ) pe.getTypeUtils().asElement( t );
+				String collection = COLLECTIONS.get( returnedElement.getQualifiedName().toString() ); // WARNING: .toString() is necessary here since Name equals does not compare to String
+				//FIXME collection of element
 				if ( collection != null ) {
 					if ( collection.equals( "javax.persistence.metamodel.MapAttribute" ) ) {
-						return new MetaMap( parent, p, collection, getKeyType( t ), getElementType( t ) );
+						return new MetaMap( parent, element, collection, getKeyType( t ), getElementType( t ) );
 					}
 					else {
-						return new MetaCollection( parent, p, collection, getElementType( t ) );
+						return new MetaCollection( parent, element, collection, getElementType( t ) );
 					}
 				}
 				else {
-					return new MetaSingleAttribute( parent, p, e.getQualifiedName().toString() );
+					//FIXME Consider XML
+					if ( element.getAnnotation( Embedded.class ) != null
+							|| returnedElement.getAnnotation( Embeddable.class ) != null ) {
+						this.parent.context.processElement( returnedElement, 
+								this.parent.defaultAccessTypeForHierarchy );
+					}
+					return new MetaSingleAttribute( parent, element, returnedElement.getQualifiedName().toString() );
 				}
 			}
 			else {

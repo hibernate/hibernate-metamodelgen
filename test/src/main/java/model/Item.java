@@ -19,6 +19,8 @@ public class Item {
 	
 	Order _order;
 
+	Detail detail;
+
 	@Id
 	public long getId() {
 		return _id;
@@ -58,6 +60,12 @@ public class Item {
 	public Map<String, Order> getNamedOrders() {
 		return null;
 	}
-	
-	
+
+	public Detail getDetail() {
+		return detail;
+	}
+
+	public void setDetail(Detail detail) {
+		this.detail = detail;
+	}
 }

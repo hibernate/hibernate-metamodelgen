@@ -22,6 +22,11 @@ public class AccessTypeTest {
 		absenceOfField( "model.Customer_", "nonPersistent" );
 	}
 
+	@Test
+	public void testDefaultAccessTypeForEmbeddable() throws Exception{
+		absenceOfField( "model.Detail_", "nonPersistent	" );
+	}
+
 
 	private void absenceOfField(String className, String fieldName) throws ClassNotFoundException {
 		Class<?> user_ = Class.forName( className );
