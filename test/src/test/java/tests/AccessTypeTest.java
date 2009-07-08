@@ -1,3 +1,5 @@
+package tests;
+
 import java.lang.reflect.Field;
 
 import org.testng.annotations.Test;

@@ -1,3 +1,5 @@
+package tests;
+
 import org.testng.annotations.Test;
 import org.testng.Assert;
 import model.Customer_;
