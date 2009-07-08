@@ -30,7 +30,7 @@ public interface IMetaEntity extends ImportContext {
 
     String getPackageName();
 
-    List<IMetaMember> getMembers();
+    List<IMetaAttribute> getMembers();
 
     String generateImports();
 

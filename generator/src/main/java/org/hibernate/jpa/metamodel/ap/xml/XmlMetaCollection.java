@@ -22,7 +22,7 @@ import org.hibernate.jpa.metamodel.ap.IMetaCollection;
 /**
  * @author Hardy Ferentschik
  */
-public class XmlMetaCollection extends XmlMetaMember implements IMetaCollection {
+public class XmlMetaCollection extends XmlMetaAttribute implements IMetaCollection {
 
     String collectionType;
 

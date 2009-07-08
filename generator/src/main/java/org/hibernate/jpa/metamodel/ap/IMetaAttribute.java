@@ -20,5 +20,12 @@ package org.hibernate.jpa.metamodel.ap;
 /**
  * @author Hardy Ferentschik
  */
-public interface IMetaAttribute extends IMetaMember {
+public interface IMetaAttribute {
+    String getDeclarationString();
+
+    String getMetaType();
+
+    String getPropertyName();
+
+   String getTypeDeclaration(); 
 }

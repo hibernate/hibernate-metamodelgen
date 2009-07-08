@@ -9,6 +9,7 @@ import javax.persistence.criteria.ListJoin;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.QueryBuilder;
 import javax.persistence.criteria.Root;
+import javax.persistence.Tuple;
 
 import model.Item;
 import model.Order;
@@ -29,7 +30,7 @@ public class QueryTest {
 	QueryBuilder qb;
 
 	public void test() {
-		CriteriaQuery q = qb.create();
+		CriteriaQuery<Tuple> q = qb.createTupleQuery();
 
 		Root<Order> order = q.from(Order.class);
 		Join<Item, Product> product = order.join(Order_.items)
@@ -39,13 +40,13 @@ public class QueryTest {
 		Path<Boolean> filled = order.get(Order_.filled);
 		Path<Date> date = order.get(Order_.date);
 
-		q.select(order, product)
+		q.select( qb.tuple( order, product ) )
 		 .where( qb.and( qb.gt(price, 100.00), qb.not(filled) ) )
-		 .order( qb.asc(price), qb.desc(date) );
+		 .orderBy( qb.asc(price), qb.desc(date) );
 	}
 
 	public void testUntypesafe() {
-		CriteriaQuery q = qb.create();
+		CriteriaQuery<Tuple> q = qb.createTupleQuery();
 
 		Root<Order> order = q.from(Order.class);
 		Join<Item, Product> product = order.join("items")
@@ -55,16 +56,16 @@ public class QueryTest {
 		Path<Boolean> filled = order.get("filled");
 		Path<Date> date = order.get("date");
 
-		q.select(order, product)
+		q.select( qb.tuple( order, product ) )
 		 .where( qb.and( qb.gt(price, 100.00), qb.not(filled) ) )
-		 .order( qb.asc(price), qb.desc(date) );
+		 .orderBy( qb.asc(price), qb.desc(date) );
 	}
 
 	/**
 	 * Navigation by joining
 	 */
 	public void test2() {
-		CriteriaQuery q = qb.create();
+		CriteriaQuery<Product> q = qb.createQuery(Product.class);
 
 		Root<Product> product = q.from(Product.class);
 		Join<Item, Order> order = product.join(Product_.items)
@@ -75,7 +76,7 @@ public class QueryTest {
 	}
 
 	public void testMap() {
-		CriteriaQuery q = qb.create();
+		CriteriaQuery<Item> q = qb.createQuery(Item.class);
 
 		Root<Item> item = q.from(Item.class);
 		Join<Item, Order> io = item.join(Item_.namedOrders);
@@ -86,7 +87,7 @@ public class QueryTest {
 	 * Navigation by compound Path
 	 */
 	public void test3() {
-		CriteriaQuery q = qb.create();
+		CriteriaQuery<Item> q = qb.createQuery(Item.class);
 
 		Root<Item> item = q.from(Item.class);
 		Path<String> shopName = item.get(Item_.order)
@@ -109,7 +110,7 @@ public class QueryTest {
 //	}
 
 	public void test4Untypesafe() {
-		CriteriaQuery q = qb.create();
+		CriteriaQuery<String> q = qb.createQuery(String.class);
 
 		Root<Order> order = q.from(Order.class);
 		ListJoin<Order, String> note = order.joinList("notes");

@@ -13,7 +13,7 @@ public class MetaMap extends MetaCollection {
 	}
 	
 	public String getDeclarationString() {
-		return "public static " + parent.importType(getMetaType()) + "<" + parent.importType(parent.getQualifiedName()) + ", " + parent.importType(keyType) + ", " + parent.importType(getTypeDeclaration()) + "> " + getPropertyName() + ";";  
+		return "public static volatile " + parent.importType(getMetaType()) + "<" + parent.importType(parent.getQualifiedName()) + ", " + parent.importType(keyType) + ", " + parent.importType(getTypeDeclaration()) + "> " + getPropertyName() + ";";  
 	}
 
 }

@@ -20,12 +20,5 @@ package org.hibernate.jpa.metamodel.ap;
 /**
  * @author Hardy Ferentschik
  */
-public interface IMetaMember {
-    String getDeclarationString();
-
-    String getMetaType();
-
-    String getPropertyName();
-
-   String getTypeDeclaration(); 
+public interface IMetaSingleAttribute extends IMetaAttribute {
 }

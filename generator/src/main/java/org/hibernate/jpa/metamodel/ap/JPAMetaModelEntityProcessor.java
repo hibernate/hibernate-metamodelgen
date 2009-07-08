@@ -234,15 +234,15 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 			pw.println( "@" + entity.importType( Generated.class.getName() ) + "(\"JPA MetaModel for " + entity.getQualifiedName() + "\")" );
 
-			pw.println( "@" + entity.importType( "javax.persistence.metamodel.TypesafeMetamodel" ) + "(" + entity.getSimpleName() + ".class)" );
+			pw.println( "@" + entity.importType( "javax.persistence.metamodel.StaticMetamodel" ) + "(" + entity.getSimpleName() + ".class)" );
 
 			pw.println( "public abstract class " + entity.getSimpleName() + "_" + " {" );
 
 			pw.println();
 
-			List<IMetaMember> members = entity.getMembers();
+			List<IMetaAttribute> members = entity.getMembers();
 
-			for ( IMetaMember metaMember : members ) {
+			for ( IMetaAttribute metaMember : members ) {
 				pw.println( "	" + metaMember.getDeclarationString() );
 			}
 			pw.println();

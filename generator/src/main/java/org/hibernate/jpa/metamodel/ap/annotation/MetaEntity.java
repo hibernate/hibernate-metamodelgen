@@ -22,7 +22,7 @@ import javax.persistence.Id;
 import javax.tools.Diagnostic.Kind;
 
 import org.hibernate.jpa.metamodel.ap.IMetaEntity;
-import org.hibernate.jpa.metamodel.ap.IMetaMember;
+import org.hibernate.jpa.metamodel.ap.IMetaAttribute;
 import org.hibernate.jpa.metamodel.ap.ImportContext;
 import org.hibernate.jpa.metamodel.ap.ImportContextImpl;
 import org.hibernate.jpa.metamodel.ap.TypeUtils;
@@ -57,9 +57,9 @@ public class MetaEntity implements IMetaEntity {
 		return pe.getElementUtils().getName( packageOf.getQualifiedName() + ".metamodel" ).toString();
 	}
 
-	public List<IMetaMember> getMembers() {
+	public List<IMetaAttribute> getMembers() {
 
-		List<IMetaMember> members = new ArrayList<IMetaMember>();
+		List<IMetaAttribute> members = new ArrayList<IMetaAttribute>();
 
 		if ( useFields() ) {
 
@@ -70,7 +70,7 @@ public class MetaEntity implements IMetaEntity {
 
 			for ( Element mymember : myMembers ) {
 
-				MetaMember result = mymember.asType().accept( new TypeVisitor( this ), mymember );
+				MetaAttribute result = mymember.asType().accept( new TypeVisitor( this ), mymember );
 				if ( result != null ) {
 					members.add( result );
 				}
@@ -90,7 +90,7 @@ public class MetaEntity implements IMetaEntity {
 					.printMessage( Kind.NOTE, "Scanning " + myMembers.size() + " methods for " + element.toString() );
 			for ( Element mymember : myMembers ) {
 
-				MetaMember result = mymember.asType().accept( new TypeVisitor( this ), mymember );
+				MetaAttribute result = mymember.asType().accept( new TypeVisitor( this ), mymember );
 				if ( result != null ) {
 					members.add( result );
 				}
@@ -136,13 +136,13 @@ public class MetaEntity implements IMetaEntity {
 	static Map<String, String> COLLECTIONS = new HashMap<String, String>();
 
 	static {
-		COLLECTIONS.put( "java.util.Collection", "javax.persistence.metamodel.Collection" );
-		COLLECTIONS.put( "java.util.Set", "javax.persistence.metamodel.Set" );
-		COLLECTIONS.put( "java.util.List", "javax.persistence.metamodel.List" );
-		COLLECTIONS.put( "java.util.Map", "javax.persistence.metamodel.Map" );
+		COLLECTIONS.put( "java.util.Collection", "javax.persistence.metamodel.CollectionAttribute" );
+		COLLECTIONS.put( "java.util.Set", "javax.persistence.metamodel.SetAttribute" );
+		COLLECTIONS.put( "java.util.List", "javax.persistence.metamodel.ListAttribute" );
+		COLLECTIONS.put( "java.util.Map", "javax.persistence.metamodel.MapAttribute" );
 	}
 
-	class TypeVisitor extends SimpleTypeVisitor6<MetaMember, Element> {
+	class TypeVisitor extends SimpleTypeVisitor6<MetaAttribute, Element> {
 
 		MetaEntity parent;
 
@@ -151,23 +151,23 @@ public class MetaEntity implements IMetaEntity {
 		}
 
 		@Override
-		protected MetaMember defaultAction(TypeMirror e, Element p) {
+		protected MetaAttribute defaultAction(TypeMirror e, Element p) {
 			return super.defaultAction( e, p );
 		}
 
 		@Override
-		public MetaMember visitPrimitive(PrimitiveType t, Element p) {
-			return new MetaAttribute( parent, p, TypeUtils.toTypeString( t ) );
+		public MetaAttribute visitPrimitive(PrimitiveType t, Element p) {
+			return new MetaSingleAttribute( parent, p, TypeUtils.toTypeString( t ) );
 		}
 
 
 		@Override
-		public MetaMember visitDeclared(DeclaredType t, Element p) {
+		public MetaAttribute visitDeclared(DeclaredType t, Element p) {
 			TypeElement e = ( TypeElement ) pe.getTypeUtils().asElement( t );
 
 			String collection = COLLECTIONS.get( e.getQualifiedName().toString() ); // WARNING: .toString() is necessary here since Name equals does not compare to String
 			if ( collection != null ) {
-				if ( collection.equals( "javax.persistence.metamodel.Map" ) ) {
+				if ( collection.equals( "javax.persistence.metamodel.MapAttribute" ) ) {
 					return new MetaMap( parent, p, collection, getKeyType( t ), getElementType( t ) );
 				}
 				else {
@@ -175,13 +175,13 @@ public class MetaEntity implements IMetaEntity {
 				}
 			}
 			else {
-				return new MetaAttribute( parent, p, e.getQualifiedName().toString() );
+				return new MetaSingleAttribute( parent, p, e.getQualifiedName().toString() );
 			}
 		}
 
 
 		@Override
-		public MetaMember visitExecutable(ExecutableType t, Element p) {
+		public MetaAttribute visitExecutable(ExecutableType t, Element p) {
 			String string = p.getSimpleName().toString();
 
 			// TODO: implement proper property get/is/boolean detection

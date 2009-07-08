@@ -27,7 +27,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
 import org.hibernate.jpa.metamodel.ap.IMetaEntity;
-import org.hibernate.jpa.metamodel.ap.IMetaMember;
+import org.hibernate.jpa.metamodel.ap.IMetaAttribute;
 import org.hibernate.jpa.metamodel.ap.ImportContext;
 import org.hibernate.jpa.metamodel.ap.ImportContextImpl;
 import org.hibernate.jpa.metamodel.xml.jaxb.Attributes;
@@ -46,10 +46,10 @@ public class XmlMetaEntity implements IMetaEntity {
 	static Map<String, String> COLLECTIONS = new HashMap<String, String>();
 
 	static {
-		COLLECTIONS.put( "java.util.Collection", "javax.persistence.metamodel.Collection" );
-		COLLECTIONS.put( "java.util.Set", "javax.persistence.metamodel.Set" );
-		COLLECTIONS.put( "java.util.List", "javax.persistence.metamodel.List" );
-		COLLECTIONS.put( "java.util.Map", "javax.persistence.metamodel.Map" );
+		COLLECTIONS.put( "java.util.Collection", "javax.persistence.metamodel.CollectionAttribute" );
+		COLLECTIONS.put( "java.util.Set", "javax.persistence.metamodel.SetAttribute" );
+		COLLECTIONS.put( "java.util.List", "javax.persistence.metamodel.ListAttribute" );
+		COLLECTIONS.put( "java.util.Map", "javax.persistence.metamodel.MapAttribute" );
 	}
 
 	final private Entity ormEntity;
@@ -58,7 +58,7 @@ public class XmlMetaEntity implements IMetaEntity {
 
 	final private ImportContext importContext;
 
-	final private List<IMetaMember> members = new ArrayList<IMetaMember>();
+	final private List<IMetaAttribute> members = new ArrayList<IMetaAttribute>();
 
 	private TypeElement type;
 
@@ -69,16 +69,16 @@ public class XmlMetaEntity implements IMetaEntity {
 		this.type = type;
 		Attributes attributes = ormEntity.getAttributes();
 		Id id = attributes.getId().get( 0 );
-		XmlMetaAttribute attribute = new XmlMetaAttribute( this, id.getName(), getType( id.getName() ) );
+		XmlMetaSingleAttribute attribute = new XmlMetaSingleAttribute( this, id.getName(), getType( id.getName() ) );
 		members.add( attribute );
 
 		for ( Basic basic : attributes.getBasic() ) {
-			attribute = new XmlMetaAttribute( this, basic.getName(), getType( basic.getName() ) );
+			attribute = new XmlMetaSingleAttribute( this, basic.getName(), getType( basic.getName() ) );
 			members.add( attribute );
 		}
 
 		for ( ManyToOne manyToOne : attributes.getManyToOne() ) {
-			attribute = new XmlMetaAttribute( this, manyToOne.getName(), getType( manyToOne.getName() ) );
+			attribute = new XmlMetaSingleAttribute( this, manyToOne.getName(), getType( manyToOne.getName() ) );
 			members.add( attribute );
 		}
 
@@ -108,7 +108,7 @@ public class XmlMetaEntity implements IMetaEntity {
 		return packageName + ".metamodel";
 	}
 
-	public List<IMetaMember> getMembers() {
+	public List<IMetaAttribute> getMembers() {
 		return members;
 	}
 

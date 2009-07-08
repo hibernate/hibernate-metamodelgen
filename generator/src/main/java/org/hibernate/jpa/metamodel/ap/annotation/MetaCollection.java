@@ -5,7 +5,7 @@ import org.hibernate.jpa.metamodel.ap.IMetaCollection;
 import javax.lang.model.element.Element;
 
 
-public class MetaCollection extends MetaMember implements IMetaCollection {
+public class MetaCollection extends MetaAttribute implements IMetaCollection {
 
 	private String collectionType; 
 	

@@ -17,39 +17,19 @@
 */
 package org.hibernate.jpa.metamodel.ap.xml;
 
-import org.hibernate.jpa.metamodel.ap.IMetaMember;
+import org.hibernate.jpa.metamodel.ap.IMetaSingleAttribute;
 
 /**
  * @author Hardy Ferentschik
  */
-public abstract class XmlMetaMember implements IMetaMember {
+public class XmlMetaSingleAttribute extends XmlMetaAttribute implements IMetaSingleAttribute {
 
-    private XmlMetaEntity parentEntity;
-
-    private String propertyName;
-
-    private String type;
-
-    XmlMetaMember(XmlMetaEntity parent, String propertyName, String type) {
-        this.parentEntity = parent;
-        this.propertyName = propertyName;
-        this.type = type;
+    public XmlMetaSingleAttribute(XmlMetaEntity parent, String propertyName, String type) {
+        super(parent, propertyName, type);
     }
 
-
-    @Override
-    public String getDeclarationString() {
-        return "public static " + parentEntity.importType(getMetaType()) + "<" + parentEntity.importType(parentEntity.getQualifiedName()) + ", " + parentEntity.importType(getTypeDeclaration()) + "> " + getPropertyName() + ";";
+	@Override
+    public String getMetaType() {
+        return "javax.persistence.metamodel.SingularAttribute";
     }
-
-    public String getPropertyName() {
-        return propertyName;
-    }
-
-    public String getTypeDeclaration() {
-		return type;
-	}
-
-    @Override
-    abstract public String getMetaType();
 }

@@ -17,10 +17,10 @@
 */
 package org.hibernate.jpa.metamodel.ap;
 
-import org.hibernate.jpa.metamodel.ap.IMetaMember;
+import org.hibernate.jpa.metamodel.ap.IMetaAttribute;
 
 /**
  * @author Hardy Ferentschik
  */
-public interface IMetaCollection extends IMetaMember {
+public interface IMetaCollection extends IMetaAttribute {
 }
