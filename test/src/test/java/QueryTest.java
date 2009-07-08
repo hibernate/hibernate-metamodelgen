@@ -14,10 +14,10 @@ import javax.persistence.Tuple;
 import model.Item;
 import model.Order;
 import model.Product;
-import model.metamodel.Item_;
-import model.metamodel.Order_;
-import model.metamodel.Product_;
-import model.metamodel.Shop_;
+import model.Item_;
+import model.Order_;
+import model.Product_;
+import model.Shop_;
 
 /**
  * Writing queries involves passing typesafe, statically cached, metamodel
