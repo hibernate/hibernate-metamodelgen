@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import javax.annotation.Generated;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.FilerException;
@@ -25,14 +24,14 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
+import javax.persistence.Embeddable;
+import javax.persistence.MappedSuperclass;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Embeddable;
 
 import org.hibernate.jpa.metamodel.ap.annotation.MetaEntity;
 import org.hibernate.jpa.metamodel.ap.xml.XmlMetaEntity;
@@ -269,7 +268,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		String name = getRelativeName( resource );
 		processingEnv.getMessager()
 				.printMessage( Diagnostic.Kind.NOTE, "Checking for " + resource );
-		InputStream ormStream;
+		InputStream ormStream = null;
 		try {
 			FileObject fileObject = processingEnv.getFiler().getResource( StandardLocation.CLASS_OUTPUT, pkg, name );
 			ormStream = fileObject.openInputStream();
@@ -278,8 +277,14 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			processingEnv.getMessager()
 					.printMessage(
 							Diagnostic.Kind.WARNING,
-							"Could not load " + resource + " using Filer.getResource(). Trying classpath..."
+							"Could not load " + resource + "from class output directory"
 					);
+
+			// TODO
+			// unfortunately, the Filer.getResource API seems not to be able to load from /META-INF. One gets a
+			// FilerException with the message with "Illegal name /META-INF". This means that we have to revert to
+			// using the classpath. This might mean that we find a persistence.xml which is 'part of another jar.
+			// Not sure what else we can do here
 			ormStream = this.getClass().getResourceAsStream( resource );
 		}
 		return ormStream;
