@@ -172,4 +172,13 @@ public class XmlMetaEntity implements IMetaEntity {
 		}
 		return typeName;
 	}
+
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder();
+		sb.append( "XmlMetaEntity" );
+		sb.append( "{type=" ).append( type );
+		sb.append( '}' );
+		return sb.toString();
+	}
 }

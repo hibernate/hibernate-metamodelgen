@@ -132,6 +132,14 @@ public class MetaEntity implements IMetaEntity {
 		return false;
 	}
 
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder();
+		sb.append( "MetaEntity" );
+		sb.append( "{element=" ).append( element );
+		sb.append( '}' );
+		return sb.toString();
+	}
 
 	static Map<String, String> COLLECTIONS = new HashMap<String, String>();
 
