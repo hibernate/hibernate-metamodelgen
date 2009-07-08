@@ -32,6 +32,8 @@ import javax.tools.StandardLocation;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
+import javax.persistence.MappedSuperclass;
+import javax.persistence.Embeddable;
 
 import org.hibernate.jpa.metamodel.ap.annotation.MetaEntity;
 import org.hibernate.jpa.metamodel.ap.xml.XmlMetaEntity;
@@ -56,6 +58,10 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 	private final Map<String, IMetaEntity> metaEntities = new HashMap<String, IMetaEntity>();
 	private boolean xmlProcessed = false;
+	private static final String ENTITY_ANN = javax.persistence.Entity.class.getName();
+	private static final String MAPPED_SUPERCLASS_ANN = MappedSuperclass.class.getName();
+	private static final String EMBEDDABLE_ANN = Embeddable.class.getName();
+
 
 	public void init(ProcessingEnvironment env) {
 		super.init( env );
@@ -72,7 +78,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			return false;
 		}
 
-		if ( !processingRoundConstainsEntities( annotations ) ) {
+		if ( !hostJPAAnnotations( annotations ) ) {
 			processingEnv.getMessager()
 					.printMessage( Diagnostic.Kind.NOTE, "Current processing round does not contain entities" );
 			return true;
@@ -91,9 +97,16 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		return true;
 	}
 
-	private boolean processingRoundConstainsEntities(Set<? extends TypeElement> annotations) {
+	private boolean hostJPAAnnotations(Set<? extends TypeElement> annotations) {
 		for ( TypeElement type : annotations ) {
-			if ( type.getQualifiedName().toString().equals( javax.persistence.Entity.class.getName() ) ) {
+			final String typeName = type.getQualifiedName().toString();
+			if ( typeName.equals( ENTITY_ANN ) ) {
+				return true;
+			}
+			else if ( typeName.equals( EMBEDDABLE_ANN ) ) {
+				return true;
+			}
+			else if ( typeName.equals( MAPPED_SUPERCLASS_ANN ) ) {
 				return true;
 			}
 		}
@@ -169,7 +182,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			final String annotationType = mirror.getAnnotationType().toString();
 
 			if ( element.getKind() == ElementKind.CLASS &&
-					annotationType.equals( javax.persistence.Entity.class.getName() ) ) {
+					annotationType.equals( ENTITY_ANN ) ) {
 				MetaEntity metaEntity = new MetaEntity( processingEnv, ( TypeElement ) element );
 				writeFile( metaEntity );
 			}
