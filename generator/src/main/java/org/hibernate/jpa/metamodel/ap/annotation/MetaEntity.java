@@ -212,6 +212,7 @@ public class MetaEntity implements IMetaEntity {
 
 		@Override
 		public MetaAttribute visitPrimitive(PrimitiveType t, Element p) {
+			//FIXME consider XML
 			if ( p.getAnnotation( Transient.class ) == null ) {
 				return new MetaSingleAttribute( parent, p, TypeUtils.toTypeString( t ) );
 			}
@@ -223,6 +224,7 @@ public class MetaEntity implements IMetaEntity {
 
 		@Override
 		public MetaAttribute visitDeclared(DeclaredType t, Element p) {
+			//FIXME consider XML
 			if ( p.getAnnotation( Transient.class ) == null ) {
 				TypeElement e = ( TypeElement ) pe.getTypeUtils().asElement( t );
 				String collection = COLLECTIONS.get( e.getQualifiedName().toString() ); // WARNING: .toString() is necessary here since Name equals does not compare to String
