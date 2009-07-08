@@ -282,11 +282,11 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			final Element superClassElement = ( ( DeclaredType ) superClass ).asElement();
 			String superClassName = ( ( TypeElement ) superClassElement ).getQualifiedName().toString();
 			if ( metaEntities.containsKey( superClassName ) ) {
-				pw.print( " extends " + superClassName + "_ "  );
+				pw.print( " extends " + superClassName + "_"  );
 			}
 		}
 
-		pw.println( "{" );
+		pw.println( " {" );
 	}
 
 	private InputStream getInputStreamForResource(String resource) {
