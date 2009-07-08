@@ -10,6 +10,7 @@ import javax.persistence.OneToMany;
 @Entity
 public class Customer extends User {
 	private Set<Order> orders;
+	private String nonPersistent;
 
 	public Set<Order> getOrders() {
 		return orders;
