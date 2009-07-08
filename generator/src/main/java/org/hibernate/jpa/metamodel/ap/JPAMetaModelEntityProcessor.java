@@ -294,7 +294,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		String name = getRelativeName( resource );
 		processingEnv.getMessager()
 				.printMessage( Diagnostic.Kind.NOTE, "Checking for " + resource );
-		InputStream ormStream = null;
+		InputStream ormStream;
 		try {
 			FileObject fileObject = processingEnv.getFiler().getResource( StandardLocation.CLASS_OUTPUT, pkg, name );
 			ormStream = fileObject.openInputStream();
@@ -303,7 +303,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			processingEnv.getMessager()
 					.printMessage(
 							Diagnostic.Kind.WARNING,
-							"Could not load " + resource + "from class output directory"
+							"Could not load " + resource + " using processingEnv.getFiler().getResource(). Using classpath..."
 					);
 
 			// TODO
