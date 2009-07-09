@@ -3,17 +3,10 @@ package org.hibernate.jpa.metamodel.ap;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import javax.annotation.Generated;
 import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
@@ -24,9 +17,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.DeclaredType;
 import javax.persistence.Embeddable;
 import javax.persistence.MappedSuperclass;
 import javax.tools.Diagnostic;
@@ -66,7 +56,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 	public void init(ProcessingEnvironment env) {
 		super.init( env );
-		context = new Context(env);
+		context = new Context( env );
 		processingEnv.getMessager().printMessage( Diagnostic.Kind.NOTE, "Init Processor " + this );
 	}
 
@@ -164,6 +154,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 		parseEntities( mappings );
 		parseEmbeddable( mappings );
+		parseMappedSuperClass( mappings );
 	}
 
 	private void parseEntities(EntityMappings mappings) {
@@ -173,7 +164,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			String fullyQualifiedClassName = packageName + "." + entity.getClazz();
 			Elements utils = processingEnv.getElementUtils();
 			XmlMetaEntity metaEntity = new XmlMetaEntity(
-					entity, packageName, utils.getTypeElement( fullyQualifiedClassName ), context
+					entity, packageName, utils.getTypeElement( fullyQualifiedClassName )
 			);
 
 			if ( context.getMetaEntitiesToProcess().containsKey( fullyQualifiedClassName ) ) {
@@ -194,6 +185,26 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			Elements utils = processingEnv.getElementUtils();
 			XmlMetaEntity metaEntity = new XmlMetaEntity(
 					embeddable, packageName, utils.getTypeElement( fullyQualifiedClassName )
+			);
+
+			if ( context.getMetaSuperclassAndEmbeddableToProcess().containsKey( fullyQualifiedClassName ) ) {
+				processingEnv.getMessager().printMessage(
+						Diagnostic.Kind.WARNING,
+						fullyQualifiedClassName + " was already processed once. Skipping second occurance."
+				);
+			}
+			context.getMetaSuperclassAndEmbeddableToProcess().put( fullyQualifiedClassName, metaEntity );
+		}
+	}
+
+	private void parseMappedSuperClass(EntityMappings mappings) {
+		String packageName = mappings.getPackage();
+		Collection<org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass> mappedSuperClasses = mappings.getMappedSuperclass();
+		for ( org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass mappedSuperClass : mappedSuperClasses ) {
+			String fullyQualifiedClassName = packageName + "." + mappedSuperClass.getClazz();
+			Elements utils = processingEnv.getElementUtils();
+			XmlMetaEntity metaEntity = new XmlMetaEntity(
+					mappedSuperClass, packageName, utils.getTypeElement( fullyQualifiedClassName )
 			);
 
 			if ( context.getMetaSuperclassAndEmbeddableToProcess().containsKey( fullyQualifiedClassName ) ) {

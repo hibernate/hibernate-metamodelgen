@@ -6,13 +6,12 @@
                  version="2.0"
         >
     <!-- careful old JPA1 schema -->
-    <package>model.xmlmapped</package>  <!-- default package -->
-    <embeddable class="Address" access="FIELD" metadata-complete="true"> <!--means ignore annotations-->
+    <package>model.xmlmapped</package>
+    <!-- default package -->
+    <mapped-superclass class="Building" access="FIELD" metadata-complete="true"> <!--means ignore annotations-->
         <attributes>
-            <basic name="street1"/>
-            <basic name="city"/>
-            <basic name="country"/>
+            <many-to-one name="address" fetch="LAZY"/>
         </attributes>
-    </embeddable>
+    </mapped-superclass>
 </entity-mappings>
 

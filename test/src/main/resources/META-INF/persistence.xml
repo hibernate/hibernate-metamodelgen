@@ -6,5 +6,6 @@
         <description>Test persistence unit</description>
         <mapping-file>/META-INF/order.xml</mapping-file>
         <mapping-file>/META-INF/address.xml</mapping-file>
+        <mapping-file>/META-INF/building.xml</mapping-file>
     </persistence-unit>
 </persistence>

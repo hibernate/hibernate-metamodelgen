@@ -26,20 +26,20 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
-import org.hibernate.jpa.metamodel.ap.IMetaEntity;
 import org.hibernate.jpa.metamodel.ap.IMetaAttribute;
+import org.hibernate.jpa.metamodel.ap.IMetaEntity;
 import org.hibernate.jpa.metamodel.ap.ImportContext;
 import org.hibernate.jpa.metamodel.ap.ImportContextImpl;
-import org.hibernate.jpa.metamodel.ap.Context;
 import org.hibernate.jpa.metamodel.xml.jaxb.Attributes;
 import org.hibernate.jpa.metamodel.xml.jaxb.Basic;
 import org.hibernate.jpa.metamodel.xml.jaxb.ElementCollection;
+import org.hibernate.jpa.metamodel.xml.jaxb.Embeddable;
+import org.hibernate.jpa.metamodel.xml.jaxb.EmbeddableAttributes;
 import org.hibernate.jpa.metamodel.xml.jaxb.Entity;
 import org.hibernate.jpa.metamodel.xml.jaxb.Id;
 import org.hibernate.jpa.metamodel.xml.jaxb.ManyToOne;
+import org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass;
 import org.hibernate.jpa.metamodel.xml.jaxb.OneToMany;
-import org.hibernate.jpa.metamodel.xml.jaxb.Embeddable;
-import org.hibernate.jpa.metamodel.xml.jaxb.EmbeddableAttributes;
 
 /**
  * @author Hardy Ferentschik
@@ -64,10 +64,8 @@ public class XmlMetaEntity implements IMetaEntity {
 	final private List<IMetaAttribute> members = new ArrayList<IMetaAttribute>();
 
 	private TypeElement element;
-	private Context context;
 
-	public XmlMetaEntity(Entity ormEntity, String packageName, TypeElement element, Context context) {
-		this.context = context;
+	public XmlMetaEntity(Entity ormEntity, String packageName, TypeElement element) {
 		this.clazzName = ormEntity.getClazz();
 		this.packageName = packageName;
 		importContext = new ImportContextImpl( getPackageName() );
@@ -77,28 +75,17 @@ public class XmlMetaEntity implements IMetaEntity {
 		XmlMetaSingleAttribute attribute = new XmlMetaSingleAttribute( this, id.getName(), getType( id.getName() ) );
 		members.add( attribute );
 
-		for ( Basic basic : attributes.getBasic() ) {
-			attribute = new XmlMetaSingleAttribute( this, basic.getName(), getType( basic.getName() ) );
-			members.add( attribute );
-		}
+		parseAttributes( attributes );
+	}
 
-		for ( ManyToOne manyToOne : attributes.getManyToOne() ) {
-			attribute = new XmlMetaSingleAttribute( this, manyToOne.getName(), getType( manyToOne.getName() ) );
-			members.add( attribute );
-		}
+	public XmlMetaEntity(MappedSuperclass mappedSuperclass, String packageName, TypeElement element) {
+		this.clazzName = mappedSuperclass.getClazz();
+		this.packageName = packageName;
+		importContext = new ImportContextImpl( getPackageName() );
+		this.element = element;
+		Attributes attributes = mappedSuperclass.getAttributes();
 
-		XmlMetaCollection metaCollection;
-		for ( OneToMany oneToMany : attributes.getOneToMany() ) {
-			String[] types = getCollectionType( oneToMany.getName() );
-			metaCollection = new XmlMetaCollection( this, oneToMany.getName(), types[0], types[1] );
-			members.add( metaCollection );
-		}
-
-		for ( ElementCollection collection : attributes.getElementCollection() ) {
-			String[] types = getCollectionType( collection.getName() );
-			metaCollection = new XmlMetaCollection( this, collection.getName(), types[0], types[1] );
-			members.add( metaCollection );
-		}
+		parseAttributes( attributes );
 	}
 
 	public XmlMetaEntity(Embeddable embeddable, String packageName, TypeElement element) {
@@ -221,5 +208,31 @@ public class XmlMetaEntity implements IMetaEntity {
 		sb.append( "{type=" ).append( element );
 		sb.append( '}' );
 		return sb.toString();
+	}
+
+	private void parseAttributes(Attributes attributes) {
+		XmlMetaSingleAttribute attribute;
+		for ( Basic basic : attributes.getBasic() ) {
+			attribute = new XmlMetaSingleAttribute( this, basic.getName(), getType( basic.getName() ) );
+			members.add( attribute );
+		}
+
+		for ( ManyToOne manyToOne : attributes.getManyToOne() ) {
+			attribute = new XmlMetaSingleAttribute( this, manyToOne.getName(), getType( manyToOne.getName() ) );
+			members.add( attribute );
+		}
+
+		XmlMetaCollection metaCollection;
+		for ( OneToMany oneToMany : attributes.getOneToMany() ) {
+			String[] types = getCollectionType( oneToMany.getName() );
+			metaCollection = new XmlMetaCollection( this, oneToMany.getName(), types[0], types[1] );
+			members.add( metaCollection );
+		}
+
+		for ( ElementCollection collection : attributes.getElementCollection() ) {
+			String[] types = getCollectionType( collection.getName() );
+			metaCollection = new XmlMetaCollection( this, collection.getName(), types[0], types[1] );
+			members.add( metaCollection );
+		}
 	}
 }

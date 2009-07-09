@@ -6,10 +6,16 @@ import org.testng.annotations.Test;
 /**
  * @author Hardy Ferentschik
  */
-@Test
 public class XmlMappingTest {
 	@Test
-	public void testDefaultAccessType() throws Exception {
+	public void testXmlConfiguredEmbeddedClassGenerated() throws Exception {
 		assertNotNull( Class.forName( "model.xmlmapped.Address_" ) );
+	}
+
+	@Test
+	public void testXmlConfiguredMappedSuperclassGenerated() throws Exception {
+		Class<?> building =  Class.forName( "model.xmlmapped.Building_" );
+		assertNotNull( building );
+		assertNotNull( building.getField( "address" ));
 	}
 }
