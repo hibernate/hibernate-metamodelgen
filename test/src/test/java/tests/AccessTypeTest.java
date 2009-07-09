@@ -27,6 +27,11 @@ public class AccessTypeTest {
 		absenceOfField( "model.Detail_", "nonPersistent	" );
 	}
 
+	@Test
+	public void testDefaultAccessTypeForMappedSuperclass() throws Exception{
+		absenceOfField( "model.Detail_", "volume" );
+	}
+
 
 	private void absenceOfField(String className, String fieldName) throws ClassNotFoundException {
 		Class<?> user_ = Class.forName( className );

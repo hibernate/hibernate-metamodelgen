@@ -111,8 +111,20 @@ public class MetaEntity implements IMetaEntity {
 					//pe.getMessager().printMessage(Kind.WARNING, "Not a valid JPA property", mymember);
 				}
 			}
-
 		}
+
+		//process superclasses
+		for(TypeElement superclass = TypeUtils.getSuperclass(element) ;
+			superclass != null ;
+			superclass = TypeUtils.getSuperclass( superclass ) ) {
+			if ( superclass.getAnnotation( Entity.class ) != null ) {
+				break; //will be handled or has been handled already
+			}
+			else if ( superclass.getAnnotation( MappedSuperclass.class ) != null ) {
+				context.processElement( superclass, defaultAccessTypeForHierarchy );
+			}
+		}
+
 
 		if ( members.size() == 0 ) {
 			pe.getMessager().printMessage( Kind.WARNING, "No properties found on " + element, element );

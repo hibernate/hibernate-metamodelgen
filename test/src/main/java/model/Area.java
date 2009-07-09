@@ -11,6 +11,11 @@ public class Area {
 	private int width;
 	private int height;
 
+	//should not be persistent
+	public int getVolume() {
+		return length*width*height;
+	}
+
 	public int getLength() {
 		return length;
 	}
