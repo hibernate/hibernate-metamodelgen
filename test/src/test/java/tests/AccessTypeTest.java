@@ -12,6 +12,13 @@ import org.testng.Assert;
  */
 @Test
 public class AccessTypeTest {
+
+	@Test
+	public void testExcludeTransientFieldAndStatic() throws Exception{
+		absenceOfField( "model.Product_", "nonPersistent" );
+		absenceOfField( "model.Product_", "nonPersistent2" );
+	}
+
 	@Test
 	public void testDefaultAccessTypeOnEntity() throws Exception{
 		absenceOfField( "model.User_", "nonPersistent" );

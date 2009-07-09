@@ -11,6 +11,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.PrimitiveType;
@@ -272,10 +273,13 @@ public class MetaEntity implements IMetaEntity {
 		}
 
 		@Override
-		public MetaAttribute visitPrimitive(PrimitiveType t, Element p) {
+		public MetaAttribute visitPrimitive(PrimitiveType t, Element element) {
 			//FIXME consider XML
-			if ( p.getAnnotation( Transient.class ) == null ) {
-				return new MetaSingleAttribute( parent, p, TypeUtils.toTypeString( t ) );
+			if ( element.getAnnotation( Transient.class ) == null
+					&& !element.getModifiers().contains( Modifier.TRANSIENT )
+					&& !element.getModifiers().contains( Modifier.STATIC )
+					) {
+				return new MetaSingleAttribute( parent, element, TypeUtils.toTypeString( t ) );
 			}
 			else {
 				return null;
@@ -286,7 +290,10 @@ public class MetaEntity implements IMetaEntity {
 		@Override
 		public MetaAttribute visitDeclared(DeclaredType t, Element element) {
 			//FIXME consider XML
-			if ( element.getAnnotation( Transient.class ) == null ) {
+			if ( element.getAnnotation( Transient.class ) == null
+					&& ! element.getModifiers().contains( Modifier.TRANSIENT )
+					&& !element.getModifiers().contains( Modifier.STATIC )
+					) {
 				TypeElement returnedElement = ( TypeElement ) pe.getTypeUtils().asElement( t );
 				String collection = COLLECTIONS.get( returnedElement.getQualifiedName().toString() ); // WARNING: .toString() is necessary here since Name equals does not compare to String
 				//FIXME collection of element

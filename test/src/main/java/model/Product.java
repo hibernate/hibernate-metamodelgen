@@ -10,6 +10,9 @@ import javax.persistence.OneToMany;
 
 @Entity  
 public class Product {
+
+	transient String nonPersistent;
+	static String nonPersistent2;
 	
 	@Id
 	long id;
