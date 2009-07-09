@@ -25,6 +25,7 @@ import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
 import javax.persistence.Embedded;
 import javax.persistence.Embeddable;
+import javax.persistence.Access;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.Diagnostic;
 
@@ -42,6 +43,7 @@ public class MetaEntity implements IMetaEntity {
 
 	final ImportContext importContext;
 	private Context context;
+	//used to propagate the access type of the root entity over to subclasses, superclasses and embeddable
 	private AccessType defaultAccessTypeForHierarchy;
 
 	public MetaEntity(ProcessingEnvironment pe, TypeElement element, Context context) {
@@ -134,12 +136,13 @@ public class MetaEntity implements IMetaEntity {
 
 	private boolean useFields() {
 		//default strategy has more power than local discovery
+		//particularly @MappedSuperclass and @Embedded have defaultAccessTypeForHierarchy already filled
 		if ( this.defaultAccessTypeForHierarchy != null ) {
 			return defaultAccessTypeForHierarchy == AccessType.FIELD;
 		}
 
 		//get local strategy
-		AccessType accessType = getAccessTypeForClass( element );
+		AccessType accessType = getAccessTypeForClass(element);
 		if (accessType != null) {
 			this.defaultAccessTypeForHierarchy = accessType;
 			return accessType == AccessType.FIELD;
@@ -147,8 +150,10 @@ public class MetaEntity implements IMetaEntity {
 
 		//we dont' know
 		//if an enity go up
-		//TODO if a superclass go down till you find entity
-		//TODO if in the superclass case you're still unsure, go up
+		//
+		//superclasses alre always treated after their entities
+		//and their access type are discovered
+		//FIXME is it really true if only the superclass is changed
 		TypeElement superClass = element;
 		do {
 			superClass = TypeUtils.getSuperclass( superClass );
@@ -168,6 +173,9 @@ public class MetaEntity implements IMetaEntity {
 						return accessType == AccessType.FIELD;
 					}
 				}
+				else {
+					break; //neither @Entity nor @MappedSuperclass
+				}
 			}
 		}
 		while ( superClass != null );
@@ -179,11 +187,25 @@ public class MetaEntity implements IMetaEntity {
 
 	private AccessType getAccessTypeForClass(TypeElement searchedElement) {
 		pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "check class" + searchedElement );
-		final AccessType accessType = context.getAccessTypes().get( searchedElement );
+		AccessType accessType = context.getAccessTypes().get( searchedElement );
 		if ( accessType != null ) {
+			this.defaultAccessTypeForHierarchy = accessType;
 			pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "Found in cache" + searchedElement + ":" + accessType );
 			return accessType;
 		}
+
+		/**
+		 * when forcing access type, we can only override the defaultAccessTypeForHierarchy
+		 * if we are the entity root (identified by having @Id or @EmbeddedId
+		 */
+		final Access accessAnn = searchedElement.getAnnotation( Access.class );
+		AccessType forcedAccessType = accessAnn != null ? accessAnn.value() : null;
+		if ( forcedAccessType != null) {
+			pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "access type " + searchedElement + ":" + accessType );
+			context.addAccessType( searchedElement, forcedAccessType );
+		}
+		//continue nevertheless to check if we are root and if defaultAccessTypeForHierarchy
+		//should be overridden
 
 		List<? extends Element> myMembers = searchedElement.getEnclosedElements();
 		for ( Element subElement : myMembers ) {
@@ -195,18 +217,22 @@ public class MetaEntity implements IMetaEntity {
 
 				final String annotationType = annotationMirror.getAnnotationType().toString();
 
+				//FIXME consider XML
 				if ( annotationType.equals( Id.class.getName() )
 						|| annotationType.equals( EmbeddedId.class.getName() ) ) {
 					pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "Found id on" + searchedElement );
-					if ( subElement.getKind() == ElementKind.FIELD ) {
-						context.addAccessType( searchedElement, AccessType.FIELD );
-						pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "access type " + searchedElement + ":" + accessType );
-						return AccessType.FIELD;
-					}
-					else {
-						context.addAccessType( searchedElement, AccessType.PROPERTY );
-						pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "access type " + searchedElement + ":" + accessType );
-						return AccessType.PROPERTY;
+					final ElementKind kind = subElement.getKind();
+					if ( kind == ElementKind.FIELD || kind == ElementKind.METHOD ) {
+						accessType = kind == ElementKind.FIELD ? AccessType.FIELD : AccessType.PROPERTY;
+						this.defaultAccessTypeForHierarchy = accessType;
+						if ( forcedAccessType == null) {
+							context.addAccessType( searchedElement, accessType );
+							pe.getMessager().printMessage( Diagnostic.Kind.NOTE, "access type " + searchedElement + ":" + accessType );
+							return accessType;
+						}
+						else {
+							return forcedAccessType;
+						}
 					}
 				}
 			}

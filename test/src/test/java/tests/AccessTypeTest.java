@@ -32,13 +32,22 @@ public class AccessTypeTest {
 		absenceOfField( "model.Detail_", "volume" );
 	}
 
+	@Test
+	public void testExplicitAccessTypeAndDefaultFromRootEntity() throws Exception{
+		absenceOfField( "model.LivingBeing_", "nonPersistent", "eplicit access type on mapped superclass" );
+		absenceOfField( "model.Hominidae_", "nonPersistent", "eplicit access type on entity" );
+		absenceOfField( "model.Human_", "nonPersistent", "proper inheritance from root entity access type" );
+	}
 
 	private void absenceOfField(String className, String fieldName) throws ClassNotFoundException {
+		absenceOfField( className, fieldName, "field should not be persistent" );
+	}
+	private void absenceOfField(String className, String fieldName, String errorString) throws ClassNotFoundException {
 		Class<?> user_ = Class.forName( className );
 		try {
 
 			final Field nonPersistentField = user_.getField( fieldName );
-			Assert.fail( "field should not be persistent" );
+			Assert.fail( errorString );
 		}
 		catch (NoSuchFieldException e) {}
 	}
