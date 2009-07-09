@@ -40,6 +40,7 @@ import org.hibernate.jpa.metamodel.xml.jaxb.Id;
 import org.hibernate.jpa.metamodel.xml.jaxb.ManyToOne;
 import org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass;
 import org.hibernate.jpa.metamodel.xml.jaxb.OneToMany;
+import org.hibernate.jpa.metamodel.xml.jaxb.OneToOne;
 
 /**
  * @author Hardy Ferentschik
@@ -103,6 +104,11 @@ public class XmlMetaEntity implements IMetaEntity {
 
 		for ( ManyToOne manyToOne : attributes.getManyToOne() ) {
 			attribute = new XmlMetaSingleAttribute( this, manyToOne.getName(), getType( manyToOne.getName() ) );
+			members.add( attribute );
+		}
+
+		for ( OneToOne oneToOne : attributes.getOneToOne() ) {
+			attribute = new XmlMetaSingleAttribute( this, oneToOne.getName(), getType( oneToOne.getName() ) );
 			members.add( attribute );
 		}
 
@@ -219,6 +225,11 @@ public class XmlMetaEntity implements IMetaEntity {
 
 		for ( ManyToOne manyToOne : attributes.getManyToOne() ) {
 			attribute = new XmlMetaSingleAttribute( this, manyToOne.getName(), getType( manyToOne.getName() ) );
+			members.add( attribute );
+		}
+
+		for ( OneToOne oneToOne : attributes.getOneToOne() ) {
+			attribute = new XmlMetaSingleAttribute( this, oneToOne.getName(), getType( oneToOne.getName() ) );
 			members.add( attribute );
 		}
 
