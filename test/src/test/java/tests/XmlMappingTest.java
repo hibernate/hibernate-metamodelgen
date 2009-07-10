@@ -1,6 +1,7 @@
 package tests;
 
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
 /**
@@ -14,8 +15,19 @@ public class XmlMappingTest {
 
 	@Test
 	public void testXmlConfiguredMappedSuperclassGenerated() throws Exception {
-		Class<?> building =  Class.forName( "model.xmlmapped.Building_" );
+		Class<?> building = Class.forName( "model.xmlmapped.Building_" );
 		assertNotNull( building );
-		assertNotNull( building.getField( "address" ));
+		assertNotNull( building.getField( "address" ) );
+	}
+
+	@Test
+	public void testClassHierarchy() throws Exception {
+		Class<?> mammal = Class.forName( "model.xmlmapped.Mammal_" );
+		assertNotNull( mammal );
+
+		Class<?> being = Class.forName( "model.xmlmapped.LivingBeing_" );
+		assertNotNull( being );
+
+		assertTrue( mammal.getSuperclass().equals( being ) );
 	}
 }

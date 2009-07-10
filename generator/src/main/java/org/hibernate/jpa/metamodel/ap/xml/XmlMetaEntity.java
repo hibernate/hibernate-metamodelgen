@@ -72,9 +72,6 @@ public class XmlMetaEntity implements IMetaEntity {
 		importContext = new ImportContextImpl( getPackageName() );
 		this.element = element;
 		Attributes attributes = ormEntity.getAttributes();
-		Id id = attributes.getId().get( 0 );
-		XmlMetaSingleAttribute attribute = new XmlMetaSingleAttribute( this, id.getName(), getType( id.getName() ) );
-		members.add( attribute );
 
 		parseAttributes( attributes );
 	}
@@ -193,11 +190,11 @@ public class XmlMetaEntity implements IMetaEntity {
 						break;
 					}
 					case DECLARED: {
-						typeName = ( ( DeclaredType ) elem.asType() ).toString();
+						typeName = elem.asType().toString();
 						break;
 					}
 					case TYPEVAR: {
-						typeName = ( ( DeclaredType ) elem.asType() ).toString();
+						typeName = elem.asType().toString();
 						break;
 					}
 				}
@@ -218,6 +215,16 @@ public class XmlMetaEntity implements IMetaEntity {
 
 	private void parseAttributes(Attributes attributes) {
 		XmlMetaSingleAttribute attribute;
+
+		if ( !attributes.getId().isEmpty() ) {
+			// TODO what do we do if there are more than one id nodes?
+			Id id = attributes.getId().get( 0 );
+			attribute = new XmlMetaSingleAttribute(
+					this, id.getName(), getType( id.getName() )
+			);
+			members.add( attribute );
+		}
+
 		for ( Basic basic : attributes.getBasic() ) {
 			attribute = new XmlMetaSingleAttribute( this, basic.getName(), getType( basic.getName() ) );
 			members.add( attribute );
