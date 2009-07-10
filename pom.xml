@@ -31,7 +31,6 @@
 
     <modules>
         <module>generator</module>
-        <module>test</module>
     </modules>
 
     <dependencyManagement>
@@ -40,16 +39,6 @@
                 <groupId>org.hibernate.java-persistence</groupId>
                 <artifactId>jpa-api</artifactId>
                 <version>2.0.Beta3-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>1.5.6</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>1.5.6</version>
             </dependency>
             <dependency>
                 <groupId>org.testng</groupId>
