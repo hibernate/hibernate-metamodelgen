@@ -31,7 +31,13 @@ public class AccessTypeTest {
 
 	@Test
 	public void testDefaultAccessTypeForEmbeddable() throws Exception{
-		absenceOfField( "model.Detail_", "nonPersistent	" );
+		absenceOfField( "model.Detail_", "nonPersistent" );
+	}
+
+	@Test
+	public void testInheritedAccessTypeForEmbeddable() throws Exception{
+		absenceOfField( "model.Country_", "nonPersistent" );
+		absenceOfField( "model.Pet_", "nonPersistent", "Colleciton of membeddable not taken care of" );
 	}
 
 	@Test

@@ -1,15 +1,22 @@
 package model;
 
+import java.util.Set;
 import javax.persistence.Embeddable;
+import javax.persistence.Access;
+import javax.persistence.AccessType;
+import javax.persistence.ElementCollection;
+import javax.persistence.CollectionTable;
 
 /**
  * @author Emmanuel Bernard
  */
 @Embeddable
+@Access(javax.persistence.AccessType.PROPERTY)
 public class Address {
 	private String street1;
 	private String city;
-	private String country;
+	private Country country;
+	private Set<Inhabitant> inhabitants;
 
 	public String getStreet1() {
 		return street1;
@@ -27,11 +34,21 @@ public class Address {
 		this.city = city;
 	}
 
-	public String getCountry() {
+	public Country getCountry() {
 		return country;
 	}
 
-	public void setCountry(String country) {
+	public void setCountry(Country country) {
 		this.country = country;
+	}
+
+	@ElementCollection
+	@CollectionTable(name = "Add_Inh")
+	public Set<Inhabitant> getInhabitants() {
+		return inhabitants;
+	}
+
+	public void setInhabitants(Set<Inhabitant> inhabitants) {
+		this.inhabitants = inhabitants;
 	}
 }
