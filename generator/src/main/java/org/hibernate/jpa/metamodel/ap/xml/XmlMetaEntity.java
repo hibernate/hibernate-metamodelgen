@@ -171,7 +171,6 @@ public class XmlMetaEntity implements IMetaEntity {
 		return types;
 	}
 
-	// TODO - so far only prototype. Only tested for the Order orm.xml
 	private String getType(String propertyName) {
 		String typeName = null;
 		for ( Element elem : element.getEnclosedElements() ) {

@@ -5,6 +5,7 @@
     <persistence-unit name="annotation-processor" transaction-type="JTA">
         <description>Test persistence unit</description>
         <mapping-file>/META-INF/order.xml</mapping-file>
+        <mapping-file>/META-INF/dummy.xml</mapping-file>
         <mapping-file>/model/xmlmapped/address.xml</mapping-file>
         <mapping-file>/model/xmlmapped/building.xml</mapping-file>
         <mapping-file>/model/xmlmapped/mammal.xml</mapping-file>

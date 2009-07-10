@@ -162,9 +162,17 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		Collection<Entity> entities = mappings.getEntity();
 		for ( Entity entity : entities ) {
 			String fullyQualifiedClassName = packageName + "." + entity.getClazz();
-			Elements utils = processingEnv.getElementUtils();
+
+			if ( !xmlMappedTypeExists( fullyQualifiedClassName ) ) {
+				processingEnv.getMessager().printMessage(
+						Diagnostic.Kind.WARNING,
+						fullyQualifiedClassName + " is mapped in xml, but class does not exists. Skipping meta model generation."
+				);
+				continue;
+			}
+
 			XmlMetaEntity metaEntity = new XmlMetaEntity(
-					entity, packageName, utils.getTypeElement( fullyQualifiedClassName )
+					entity, packageName, getXmlMappedType( fullyQualifiedClassName )
 			);
 
 			if ( context.getMetaEntitiesToProcess().containsKey( fullyQualifiedClassName ) ) {
@@ -177,14 +185,32 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		}
 	}
 
+	private boolean xmlMappedTypeExists(String fullyQualifiedClassName) {
+		Elements utils = processingEnv.getElementUtils();
+		return utils.getTypeElement( fullyQualifiedClassName ) != null;
+	}
+
+	private TypeElement getXmlMappedType(String fullyQualifiedClassName) {
+		Elements utils = processingEnv.getElementUtils();
+		return utils.getTypeElement( fullyQualifiedClassName );
+	}
+
 	private void parseEmbeddable(EntityMappings mappings) {
 		String packageName = mappings.getPackage();
 		Collection<org.hibernate.jpa.metamodel.xml.jaxb.Embeddable> embeddables = mappings.getEmbeddable();
 		for ( org.hibernate.jpa.metamodel.xml.jaxb.Embeddable embeddable : embeddables ) {
 			String fullyQualifiedClassName = packageName + "." + embeddable.getClazz();
-			Elements utils = processingEnv.getElementUtils();
+
+			if ( !xmlMappedTypeExists( fullyQualifiedClassName ) ) {
+				processingEnv.getMessager().printMessage(
+						Diagnostic.Kind.WARNING,
+						fullyQualifiedClassName + " is mapped in xml, but class does not exists. Skipping meta model generation."
+				);
+				continue;
+			}
+
 			XmlMetaEntity metaEntity = new XmlMetaEntity(
-					embeddable, packageName, utils.getTypeElement( fullyQualifiedClassName )
+					embeddable, packageName, getXmlMappedType( fullyQualifiedClassName )
 			);
 
 			if ( context.getMetaSuperclassAndEmbeddableToProcess().containsKey( fullyQualifiedClassName ) ) {
@@ -202,9 +228,17 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		Collection<org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass> mappedSuperClasses = mappings.getMappedSuperclass();
 		for ( org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass mappedSuperClass : mappedSuperClasses ) {
 			String fullyQualifiedClassName = packageName + "." + mappedSuperClass.getClazz();
-			Elements utils = processingEnv.getElementUtils();
+
+			if ( !xmlMappedTypeExists( fullyQualifiedClassName ) ) {
+				processingEnv.getMessager().printMessage(
+						Diagnostic.Kind.WARNING,
+						fullyQualifiedClassName + " is mapped in xml, but class does not exists. Skipping meta model generation."
+				);
+				continue;
+			}
+
 			XmlMetaEntity metaEntity = new XmlMetaEntity(
-					mappedSuperClass, packageName, utils.getTypeElement( fullyQualifiedClassName )
+					mappedSuperClass, packageName, getXmlMappedType( fullyQualifiedClassName )
 			);
 
 			if ( context.getMetaSuperclassAndEmbeddableToProcess().containsKey( fullyQualifiedClassName ) ) {

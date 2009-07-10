@@ -30,4 +30,9 @@ public class XmlMappingTest {
 
 		assertTrue( mammal.getSuperclass().equals( being ) );
 	}
+
+	@Test(expectedExceptions = ClassNotFoundException.class)
+	public void testNonExistentMappedClassesGetIgnored() throws Exception {
+		Class.forName( "model.Dummy_" );
+	}
 }
