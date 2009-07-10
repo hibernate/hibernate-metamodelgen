@@ -1,4 +1,4 @@
-package tests;
+package test;
 
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
