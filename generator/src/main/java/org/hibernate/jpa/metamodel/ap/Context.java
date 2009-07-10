@@ -16,11 +16,16 @@ import org.hibernate.jpa.metamodel.ap.annotation.MetaEntity;
  */
 public class Context {
 	//used to cache access types
-	private Map<TypeElement, AccessType> accessTypes = new HashMap<TypeElement,AccessType>();
+	private Map<TypeElement, AccessTypeHolder> accessTypes = new HashMap<TypeElement, AccessTypeHolder>();
 	private Set<String> elementsAlreadyProcessed = new HashSet<String>();
 	private ProcessingEnvironment pe;
 	private final Map<String, IMetaEntity> metaEntitiesToProcess = new HashMap<String, IMetaEntity>();
 	private final Map<String, IMetaEntity> metaSuperclassAndEmbeddableToProcess = new HashMap<String, IMetaEntity>();
+
+	private static class AccessTypeHolder {
+		public AccessType elementAccessType;
+		public AccessType hierarchyAccessType;
+	}
 
 	public Context(ProcessingEnvironment pe) {
 		this.pe = pe;
@@ -35,11 +40,31 @@ public class Context {
 	}
 
 	public void addAccessType(TypeElement element, AccessType accessType) {
-		accessTypes.put( element, accessType );
+		AccessTypeHolder typeHolder = accessTypes.get( element );
+		if ( typeHolder == null ) {
+			typeHolder = new AccessTypeHolder();
+			accessTypes.put( element, typeHolder );
+		}
+		typeHolder.elementAccessType = accessType;
 	}
 
-	public Map<TypeElement, AccessType> getAccessTypes() {
-		return accessTypes;
+	public void addAccessTypeForHierarchy(TypeElement element, AccessType accessType) {
+		AccessTypeHolder typeHolder = accessTypes.get( element );
+		if ( typeHolder == null ) {
+			typeHolder = new AccessTypeHolder();
+			accessTypes.put( element, typeHolder );
+		}
+		typeHolder.hierarchyAccessType = accessType;
+	}
+
+	public AccessType getAccessType(TypeElement element) {
+		final AccessTypeHolder typeHolder = accessTypes.get( element );
+		return typeHolder != null ? typeHolder.elementAccessType : null;
+	}
+
+	public AccessType getDefaultAccessTypeForHerarchy(TypeElement element) {
+		final AccessTypeHolder typeHolder = accessTypes.get( element );
+		return typeHolder != null ? typeHolder.hierarchyAccessType : null;
 	}
 
 	public Set<String> getElementsAlreadyProcessed() {
