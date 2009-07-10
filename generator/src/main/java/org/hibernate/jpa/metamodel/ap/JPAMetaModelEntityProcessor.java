@@ -17,6 +17,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
+import javax.persistence.AccessType;
 import javax.persistence.Embeddable;
 import javax.persistence.MappedSuperclass;
 import javax.tools.Diagnostic;
@@ -32,6 +33,8 @@ import org.hibernate.jpa.metamodel.xml.jaxb.Entity;
 import org.hibernate.jpa.metamodel.xml.jaxb.EntityMappings;
 import org.hibernate.jpa.metamodel.xml.jaxb.ObjectFactory;
 import org.hibernate.jpa.metamodel.xml.jaxb.Persistence;
+import org.hibernate.jpa.metamodel.xml.jaxb.PersistenceUnitDefaults;
+import org.hibernate.jpa.metamodel.xml.jaxb.PersistenceUnitMetadata;
 
 /**
  * Main annotation processor.
@@ -46,10 +49,11 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 	private static final String PATH_SEPARATOR = "/";
 	private static final String PERSISTENCE_XML = "/META-INF/persistence.xml";
-	private static final Boolean ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS = Boolean.TRUE;
+	private static final Boolean ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS = Boolean.FALSE;
 	private static final String ENTITY_ANN = javax.persistence.Entity.class.getName();
 	private static final String MAPPED_SUPERCLASS_ANN = MappedSuperclass.class.getName();
 	private static final String EMBEDDABLE_ANN = Embeddable.class.getName();
+	private static final AccessType DEFAULT_XML_ACCESS_TYPE = AccessType.PROPERTY;
 
 	private boolean xmlProcessed = false;
 	private Context context;
@@ -91,7 +95,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			handleRootElementAnnotationMirrors( element );
 		}
 
-		return !ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
+		return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
 	}
 
 	private void createMetaModelClasses() {
@@ -152,12 +156,47 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			return;
 		}
 
-		parseEntities( mappings );
-		parseEmbeddable( mappings );
-		parseMappedSuperClass( mappings );
+		AccessType accessType = determineGlobalAccessType( mappings );
+
+		parseEntities( mappings, accessType );
+		parseEmbeddable( mappings, accessType );
+		parseMappedSuperClass( mappings, accessType );
 	}
 
-	private void parseEntities(EntityMappings mappings) {
+	private AccessType determineGlobalAccessType(EntityMappings mappings) {
+		AccessType accessType = DEFAULT_XML_ACCESS_TYPE;
+
+		if ( mappings.getAccess() != null ) {
+			accessType = mapXmlAccessTypeToJpaAccessType( mappings.getAccess() );
+			return accessType; // no need to check persistence unit default
+		}
+
+		PersistenceUnitMetadata meta = mappings.getPersistenceUnitMetadata();
+		if ( meta != null ) {
+			PersistenceUnitDefaults persistenceUnitDefaults = meta.getPersistenceUnitDefaults();
+			if ( persistenceUnitDefaults != null ) {
+				org.hibernate.jpa.metamodel.xml.jaxb.AccessType xmlAccessType = persistenceUnitDefaults.getAccess();
+				if ( xmlAccessType != null ) {
+					accessType = mapXmlAccessTypeToJpaAccessType( xmlAccessType );
+				}
+			}
+		}
+		return accessType;
+	}
+
+	private AccessType mapXmlAccessTypeToJpaAccessType(org.hibernate.jpa.metamodel.xml.jaxb.AccessType xmlAccessType) {
+		switch ( xmlAccessType ) {
+			case FIELD: {
+				return AccessType.FIELD;
+			}
+			case PROPERTY: {
+				return AccessType.PROPERTY;
+			}
+		}
+		return null;
+	}
+
+	private void parseEntities(EntityMappings mappings, AccessType accessType) {
 		String packageName = mappings.getPackage();
 		Collection<Entity> entities = mappings.getEntity();
 		for ( Entity entity : entities ) {
@@ -195,7 +234,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		return utils.getTypeElement( fullyQualifiedClassName );
 	}
 
-	private void parseEmbeddable(EntityMappings mappings) {
+	private void parseEmbeddable(EntityMappings mappings, AccessType accessType) {
 		String packageName = mappings.getPackage();
 		Collection<org.hibernate.jpa.metamodel.xml.jaxb.Embeddable> embeddables = mappings.getEmbeddable();
 		for ( org.hibernate.jpa.metamodel.xml.jaxb.Embeddable embeddable : embeddables ) {
@@ -223,7 +262,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		}
 	}
 
-	private void parseMappedSuperClass(EntityMappings mappings) {
+	private void parseMappedSuperClass(EntityMappings mappings, AccessType accessType) {
 		String packageName = mappings.getPackage();
 		Collection<org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass> mappedSuperClasses = mappings.getMappedSuperclass();
 		for ( org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass mappedSuperClass : mappedSuperClasses ) {
