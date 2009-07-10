@@ -1,24 +1,34 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <parent>
-        <groupId>org.hibernate</groupId>
-        <artifactId>hibernate-jpamodel-generator-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.hibernate</groupId>
-    <artifactId>hibernate-jpamodel-generator</artifactId>
-    <name>Hibernate JPA Model Generator</name>
+    <artifactId>jpamodelgen</artifactId>
+    <version>1.0.0-Alpha1</version>
+    <name>JPA Model Generator</name>
+
+    <description> Annotation Processor to cenerate metadata model for JPA2 typesafe queries </description>
+
+    <developers>
+        <developer>
+            <id>hardy.ferentschik</id>
+            <name>Hardy Ferentschik</name>
+            <email>hferents@redhat.com</email>
+            <organization>JBoss, a division of Red Hat</organization>
+            <url>http://in.relation.to/Bloggers/Hardy</url>
+        </developer>
+    </developers>
+
     <dependencies>
         <dependency>
             <groupId>org.hibernate.java-persistence</groupId>
             <artifactId>jpa-api</artifactId>
+            <version>2.0.Beta3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
+            <version>5.8</version>
             <classifier>jdk15</classifier>
         </dependency>
     </dependencies>
@@ -54,7 +64,8 @@
                             <tasks>
                                 <property name="target.dir" value="target/generated-query-classes"/>
                                 <mkdir dir="${target.dir}"/>
-                                <javac srcdir="src/test/java" destdir="${target.dir}" failonerror="false" excludes="test/**">
+                                <javac srcdir="src/test/java" destdir="${target.dir}"
+                                    failonerror="false" excludes="test/**">
                                     <compilerarg value="-proc:only"/>
                                     <classpath>
                                         <path refid="maven.test.classpath"/>
@@ -150,6 +161,133 @@
                     <outputName>test-report</outputName>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.2</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Implementation-Title>${pom.artifactId}</Implementation-Title>
+                            <Implementation-Version>${pom.version}</Implementation-Version>
+                            <Implementation-Vendor>${pom.groupId}</Implementation-Vendor>
+                            <Implementation-Vendor-Id>${pom.groupId}</Implementation-Vendor-Id>
+                            <Implementation-URL>${pom.url}</Implementation-URL>
+                            <Specification-Title>JPA2 Model Generator</Specification-Title>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.0-beta-9</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
+                    <remoteTagging>true</remoteTagging>
+                    <goals>package deploy</goals>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <inceptionYear>2009</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>license.txt</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:svn:https://svn.jboss.org/repos/hibernate/jpamodelgen/trunk</connection>
+        <url>http://fisheye.jboss.org/browse/Hibernate/jpamodelgen/trunk</url>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <!-- Copy the dist to the local checkout of the JBoss maven2 repo ${maven.repository.root} -->
+            <!-- It is anticipated that ${maven.repository.root} be set in user's settings.xml -->
+            <!-- todo : replace this with direct svn access once the svnkit providers are available -->
+            <id>repository.jboss.org</id>
+            <url>file://${maven.repository.root}</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots.jboss.org</id>
+            <name>JBoss Snapshot Repository</name>
+            <url>dav:https://snapshots.jboss.org/maven2</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>2.0.1</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <reportSets>
+                    <reportSet>
+                        <id>html</id>
+                        <configuration>
+                            <tags>
+                                <tag>
+                                    <name>todo</name>
+                                    <placement>a</placement>
+                                    <head>ToDo:</head>
+                                </tag>
+                            </tags>
+                        </configuration>
+                        <reports>
+                            <report>javadoc</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jxr-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-clover-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <targetJdk>1.5</targetJdk>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>taglist-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>changelog-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>changes-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>

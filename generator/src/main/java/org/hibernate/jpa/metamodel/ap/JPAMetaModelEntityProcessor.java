@@ -50,10 +50,12 @@ import org.hibernate.jpa.metamodel.xml.jaxb.PersistenceUnitMetadata;
 //@SupportedAnnotationTypes("javax.persistence.Entity")
 @SupportedAnnotationTypes("*")
 @SupportedSourceVersion(RELEASE_6)
+// TODO Extract all the XML parsing into a separate class
 public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 	private static final String PATH_SEPARATOR = "/";
 	private static final String PERSISTENCE_XML = "/META-INF/persistence.xml";
+	private static final String ORM_XML = "/META-INF/orm.xml";
 	private static final Boolean ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS = Boolean.FALSE;
 	private static final String ENTITY_ANN = javax.persistence.Entity.class.getName();
 	private static final String MAPPED_SUPERCLASS_ANN = MappedSuperclass.class.getName();
@@ -143,7 +145,6 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	private void parsePersistenceXml() {
 		Persistence persistence = parseXml( PERSISTENCE_XML, Persistence.class, PERSISTENCE_XML_XSD );
 		if ( persistence != null )
-
 		{
 			List<Persistence.PersistenceUnit> persistenceUnits = persistence.getPersistenceUnit();
 			for ( Persistence.PersistenceUnit unit : persistenceUnits ) {
@@ -153,6 +154,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 				}
 			}
 		}
+		parsingOrmXml( ORM_XML ); // /META-INF/orm.xml is implicit
 		xmlProcessed = true;
 	}
 
