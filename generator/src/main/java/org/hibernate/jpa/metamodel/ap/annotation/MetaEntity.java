@@ -77,44 +77,13 @@ public class MetaEntity implements IMetaEntity {
 	}
 
 	public List<IMetaAttribute> getMembers() {
+		List<IMetaAttribute> membersFound = new ArrayList<IMetaAttribute>();
+		final AccessType elementAccessType = getAccessTypeForElement();
+		List<? extends Element> fieldsOfClass = ElementFilter.fieldsIn( element.getEnclosedElements() );
+		addPersistentMembers( membersFound, elementAccessType, fieldsOfClass, AccessType.FIELD );
 
-		List<IMetaAttribute> members = new ArrayList<IMetaAttribute>();
-
-		if ( useFields() ) {
-
-			List<? extends Element> myMembers = ElementFilter.fieldsIn( element.getEnclosedElements() );
-
-			pe.getMessager()
-					.printMessage( Kind.NOTE, "Scanning " + myMembers.size() + " fields for " + element.toString() );
-
-			for ( Element mymember : myMembers ) {
-
-				MetaAttribute result = mymember.asType().accept( new TypeVisitor( this ), mymember );
-				if ( result != null ) {
-					members.add( result );
-				}
-				else {
-					//pe.getMessager().printMessage( Kind.WARNING, "Could not find valid info for JPA property", mymember );
-				}
-			}
-
-		}
-		else {
-			List<? extends Element> myMembers = ElementFilter.methodsIn( element.getEnclosedElements() );
-
-			pe.getMessager()
-					.printMessage( Kind.NOTE, "Scanning " + myMembers.size() + " methods for " + element.toString() );
-			for ( Element mymember : myMembers ) {
-
-				MetaAttribute result = mymember.asType().accept( new TypeVisitor( this ), mymember );
-				if ( result != null ) {
-					members.add( result );
-				}
-				else {
-					//pe.getMessager().printMessage(Kind.WARNING, "Not a valid JPA property", mymember);
-				}
-			}
-		}
+		List<? extends Element> methodsOfClass = ElementFilter.methodsIn( element.getEnclosedElements() );
+		addPersistentMembers( membersFound, elementAccessType, methodsOfClass, AccessType.PROPERTY );
 
 		//process superclasses
 		for(TypeElement superclass = TypeUtils.getSuperclass(element) ;
@@ -128,25 +97,56 @@ public class MetaEntity implements IMetaEntity {
 			}
 		}
 
-
-		if ( members.size() == 0 ) {
-			pe.getMessager().printMessage( Kind.WARNING, "No properties found on " + element, element );
-		}
-		return members;
+		//this is valid to not have properties (ie subentities)
+//		if ( membersFound.size() == 0 ) {
+//			pe.getMessager().printMessage( Kind.WARNING, "No properties found on " + element, element );
+//		}
+		return membersFound;
 	}
 
-	private boolean useFields() {
+	private void addPersistentMembers(
+			List<IMetaAttribute> membersFound,
+			AccessType elementAccessType,
+			List<? extends Element> membersOfClass,
+			AccessType membersKind) {
+		pe.getMessager()
+					.printMessage( Kind.NOTE, "Scanning " + membersOfClass.size() + " " + membersKind + " for " + element.toString() );
+		AccessType explicitAccessType;
+		if (elementAccessType == membersKind) {
+			//all membersKind considered
+			explicitAccessType = null;
+		}
+		else {
+			//use membersKind only if marked with @Access(membersKind)
+			explicitAccessType = membersKind;
+		}
+		for ( Element memberOfClass : membersOfClass ) {
+
+			MetaAttribute result = memberOfClass.asType().accept( new TypeVisitor( this, explicitAccessType ),
+					memberOfClass
+			);
+			if ( result != null ) {
+				membersFound.add( result );
+			}
+//EBE not sure why?
+//			else {
+//				pe.getMessager().printMessage( Kind.WARNING, "Could not find valid info for JPA property", mymember );
+//			}
+		}
+	}
+
+	private AccessType getAccessTypeForElement() {
 		//default strategy has more power than local discovery
 		//particularly @MappedSuperclass and @Embedded have defaultAccessTypeForHierarchy already filled
 		if ( this.defaultAccessTypeForHierarchy != null ) {
-			return defaultAccessTypeForHierarchy == AccessType.FIELD;
+			return defaultAccessTypeForHierarchy;
 		}
 
 		//get local strategy
 		AccessType accessType = getAccessTypeForClass(element);
 		if (accessType != null) {
 			this.defaultAccessTypeForHierarchy = accessType;
-			return accessType == AccessType.FIELD;
+			return accessType;
 		}
 
 		//we dont' know
@@ -164,14 +164,14 @@ public class MetaEntity implements IMetaEntity {
 					accessType = getAccessTypeForClass(superClass);
 					if ( accessType != null ) {
 						this.defaultAccessTypeForHierarchy = accessType;
-						return accessType == AccessType.FIELD;
+						return accessType;
 					}
 				}
 				else if ( superClass.getAnnotation( MappedSuperclass.class ) != null ) {
 					accessType = getAccessTypeForClass(superClass);
 					if ( accessType != null ) {
 						this.defaultAccessTypeForHierarchy = accessType;
-						return accessType == AccessType.FIELD;
+						return accessType;
 					}
 				}
 				else {
@@ -183,7 +183,7 @@ public class MetaEntity implements IMetaEntity {
 		//this is a subclass so caching is OK
 		this.defaultAccessTypeForHierarchy = accessType;
 		context.addAccessType( this.element, AccessType.PROPERTY );
-		return false; //default to getter
+		return AccessType.PROPERTY; //default to getter
 	}
 
 	private AccessType getAccessTypeForClass(TypeElement searchedElement) {
@@ -262,9 +262,13 @@ public class MetaEntity implements IMetaEntity {
 	class TypeVisitor extends SimpleTypeVisitor6<MetaAttribute, Element> {
 
 		MetaEntity parent;
+		//if null, process all members as implicit
+		//if not null, only process members marked as @Access(explicitAccessType)
+		private AccessType explicitAccessType;
 
-		TypeVisitor(MetaEntity parent) {
+		TypeVisitor(MetaEntity parent, AccessType explicitAccessType) {
 			this.parent = parent;
+			this.explicitAccessType = explicitAccessType;
 		}
 
 		@Override
@@ -274,11 +278,7 @@ public class MetaEntity implements IMetaEntity {
 
 		@Override
 		public MetaAttribute visitPrimitive(PrimitiveType t, Element element) {
-			//FIXME consider XML
-			if ( element.getAnnotation( Transient.class ) == null
-					&& !element.getModifiers().contains( Modifier.TRANSIENT )
-					&& !element.getModifiers().contains( Modifier.STATIC )
-					) {
+			if ( isPersistent( element ) ) {
 				return new MetaSingleAttribute( parent, element, TypeUtils.toTypeString( t ) );
 			}
 			else {
@@ -286,14 +286,30 @@ public class MetaEntity implements IMetaEntity {
 			}
 		}
 
+		private boolean isPersistent(Element element) {
+			//FIXME consider XML
+			boolean correctAccessType = false;
+			if (this.explicitAccessType == null) {
+				correctAccessType = true;
+			}
+			else {
+				final Access accessAnn = element.getAnnotation( Access.class );
+				if ( accessAnn != null && explicitAccessType.equals( accessAnn.value() ) ) {
+					correctAccessType = true;
+				}
+			}
+			return correctAccessType
+					&& element.getAnnotation( Transient.class ) == null
+					&& !element.getModifiers().contains( Modifier.TRANSIENT )
+					&& !element.getModifiers().contains( Modifier.STATIC );
+
+		}
+
 
 		@Override
 		public MetaAttribute visitDeclared(DeclaredType t, Element element) {
 			//FIXME consider XML
-			if ( element.getAnnotation( Transient.class ) == null
-					&& ! element.getModifiers().contains( Modifier.TRANSIENT )
-					&& !element.getModifiers().contains( Modifier.STATIC )
-					) {
+			if ( isPersistent( element ) ) {
 				TypeElement returnedElement = ( TypeElement ) pe.getTypeUtils().asElement( t );
 				String collection = COLLECTIONS.get( returnedElement.getQualifiedName().toString() ); // WARNING: .toString() is necessary here since Name equals does not compare to String
 				//FIXME collection of element

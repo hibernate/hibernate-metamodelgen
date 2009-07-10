@@ -46,16 +46,30 @@ public class AccessTypeTest {
 		absenceOfField( "model.Human_", "nonPersistent", "proper inheritance from root entity access type" );
 	}
 
+	@Test
+	public void testMemberAccessType() throws Exception{
+		presenceOfField( "model.Customer_", "goodPayer", "access type overriding" );
+	}
+
 	private void absenceOfField(String className, String fieldName) throws ClassNotFoundException {
 		absenceOfField( className, fieldName, "field should not be persistent" );
 	}
 	private void absenceOfField(String className, String fieldName, String errorString) throws ClassNotFoundException {
+		Assert.assertFalse( isFieldHere(className, fieldName), errorString );
+	}
+
+	private void presenceOfField(String className, String fieldName, String errorString) throws ClassNotFoundException {
+		Assert.assertTrue( isFieldHere(className, fieldName), errorString );
+	}
+
+	private boolean isFieldHere(String className, String fieldName) throws ClassNotFoundException {
 		Class<?> user_ = Class.forName( className );
 		try {
-
-			final Field nonPersistentField = user_.getField( fieldName );
-			Assert.fail( errorString );
+			final Field field = user_.getField( fieldName );
+			return true;
 		}
-		catch (NoSuchFieldException e) {}
+		catch (NoSuchFieldException e) {
+			return false;
+		}
 	}
 }

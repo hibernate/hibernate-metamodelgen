@@ -3,6 +3,8 @@ package model;
 import java.util.Set;
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
+import javax.persistence.Access;
+import javax.persistence.AccessType;
 
 /**
  * @author Emmanuel Bernard
@@ -11,6 +13,9 @@ import javax.persistence.OneToMany;
 public class Customer extends User {
 	private Set<Order> orders;
 	private String nonPersistent;
+
+	@Access(AccessType.FIELD)
+	boolean goodPayer;
 
 	public Set<Order> getOrders() {
 		return orders;
