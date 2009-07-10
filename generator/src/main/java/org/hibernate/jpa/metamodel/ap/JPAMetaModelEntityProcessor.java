@@ -3,6 +3,7 @@ package org.hibernate.jpa.metamodel.ap;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -26,6 +27,10 @@ import javax.tools.StandardLocation;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+
+import org.xml.sax.SAXException;
 
 import org.hibernate.jpa.metamodel.ap.annotation.MetaEntity;
 import org.hibernate.jpa.metamodel.ap.xml.XmlMetaEntity;
@@ -54,6 +59,8 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	private static final String MAPPED_SUPERCLASS_ANN = MappedSuperclass.class.getName();
 	private static final String EMBEDDABLE_ANN = Embeddable.class.getName();
 	private static final AccessType DEFAULT_XML_ACCESS_TYPE = AccessType.PROPERTY;
+	private static final String PERSISTENCE_XML_XSD = "persistence_2_0.xsd";
+	private static final String ORM_XSD = "orm_2_0.xsd";
 
 	private boolean xmlProcessed = false;
 	private Context context;
@@ -134,7 +141,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	}
 
 	private void parsePersistenceXml() {
-		Persistence persistence = parseXml( PERSISTENCE_XML, Persistence.class );
+		Persistence persistence = parseXml( PERSISTENCE_XML, Persistence.class, PERSISTENCE_XML_XSD );
 		if ( persistence != null )
 
 		{
@@ -149,9 +156,8 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		xmlProcessed = true;
 	}
 
-
 	private void parsingOrmXml(String resource) {
-		EntityMappings mappings = parseXml( resource, EntityMappings.class );
+		EntityMappings mappings = parseXml( resource, EntityMappings.class, ORM_XSD );
 		if ( mappings == null ) {
 			return;
 		}
@@ -319,7 +325,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		String pkg = getPackage( resource );
 		String name = getRelativeName( resource );
 		processingEnv.getMessager()
-				.printMessage( Diagnostic.Kind.NOTE, "Checking for " + resource );
+				.printMessage( Diagnostic.Kind.NOTE, "Reading resource " + resource );
 		InputStream ormStream;
 		try {
 			FileObject fileObject = processingEnv.getFiler().getResource( StandardLocation.CLASS_OUTPUT, pkg, name );
@@ -347,10 +353,11 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	 *
 	 * @param resource the xml file name
 	 * @param clazz The type of jaxb node to return
+	 * @param schemaName The schema to validate against (can be {@code null});
 	 *
 	 * @return The top level jaxb instance contained in the xml file or {@code null} in case the file could not be found.
 	 */
-	private <T> T parseXml(String resource, Class<T> clazz) {
+	private <T> T parseXml(String resource, Class<T> clazz, String schemaName) {
 
 		InputStream stream = getInputStreamForResource( resource );
 
@@ -361,19 +368,19 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		try {
 			JAXBContext jc = JAXBContext.newInstance( ObjectFactory.class );
 			Unmarshaller unmarshaller = jc.createUnmarshaller();
+			if ( schemaName != null ) {
+				unmarshaller.setSchema( getSchema( schemaName ) );
+			}
 			return clazz.cast( unmarshaller.unmarshal( stream ) );
 		}
 		catch ( JAXBException e ) {
-			processingEnv.getMessager().printMessage( Diagnostic.Kind.NOTE, "Error unmarshalling " + resource );
-			e.printStackTrace();
+			String message = "Error unmarshalling " + resource + " with exception :\n " + e;
+			processingEnv.getMessager().printMessage( Diagnostic.Kind.WARNING, message );
 			return null;
 		}
 		catch ( Exception e ) {
-			processingEnv.getMessager().printMessage(
-					Diagnostic.Kind.ERROR,
-					"Problem while reading " + resource + " " + e.getMessage()
-			);
-			e.printStackTrace();
+			String message = "Error reading " + resource + " with exception :\n " + e;
+			processingEnv.getMessager().printMessage( Diagnostic.Kind.WARNING, message );
 			return null;
 		}
 	}
@@ -394,5 +401,24 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		else {
 			return resourceName.substring( resourceName.lastIndexOf( PATH_SEPARATOR ) + 1 );
 		}
+	}
+
+	private Schema getSchema(String schemaName) {
+		Schema schema = null;
+		URL schemaUrl = this.getClass().getClassLoader().getResource( schemaName );
+		if ( schemaUrl == null ) {
+		  return schema;
+		}
+		
+		SchemaFactory sf = SchemaFactory.newInstance( javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI );
+		try {
+			schema = sf.newSchema( schemaUrl );
+		}
+		catch ( SAXException e ) {
+			processingEnv.getMessager().printMessage(
+					Diagnostic.Kind.WARNING, "Unable to create schema for " + schemaName + ": " + e.getMessage()
+			);
+		}
+		return schema;
 	}
 }
