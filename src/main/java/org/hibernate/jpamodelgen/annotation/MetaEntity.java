@@ -1,4 +1,4 @@
-package org.hibernate.jpa.metamodel.ap.annotation;
+package org.hibernate.jpamodelgen.annotation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,12 +31,12 @@ import javax.persistence.ElementCollection;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.Diagnostic;
 
-import org.hibernate.jpa.metamodel.ap.IMetaEntity;
-import org.hibernate.jpa.metamodel.ap.IMetaAttribute;
-import org.hibernate.jpa.metamodel.ap.ImportContext;
-import org.hibernate.jpa.metamodel.ap.ImportContextImpl;
-import org.hibernate.jpa.metamodel.ap.TypeUtils;
-import org.hibernate.jpa.metamodel.ap.Context;
+import org.hibernate.jpamodelgen.IMetaEntity;
+import org.hibernate.jpamodelgen.IMetaAttribute;
+import org.hibernate.jpamodelgen.ImportContext;
+import org.hibernate.jpamodelgen.ImportContextImpl;
+import org.hibernate.jpamodelgen.TypeUtils;
+import org.hibernate.jpamodelgen.Context;
 
 public class MetaEntity implements IMetaEntity {
 

@@ -15,7 +15,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.hibernate.jpa.metamodel.ap.xml;
+package org.hibernate.jpamodelgen.xml;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,21 +26,21 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
-import org.hibernate.jpa.metamodel.ap.IMetaAttribute;
-import org.hibernate.jpa.metamodel.ap.IMetaEntity;
-import org.hibernate.jpa.metamodel.ap.ImportContext;
-import org.hibernate.jpa.metamodel.ap.ImportContextImpl;
-import org.hibernate.jpa.metamodel.xml.jaxb.Attributes;
-import org.hibernate.jpa.metamodel.xml.jaxb.Basic;
-import org.hibernate.jpa.metamodel.xml.jaxb.ElementCollection;
-import org.hibernate.jpa.metamodel.xml.jaxb.Embeddable;
-import org.hibernate.jpa.metamodel.xml.jaxb.EmbeddableAttributes;
-import org.hibernate.jpa.metamodel.xml.jaxb.Entity;
-import org.hibernate.jpa.metamodel.xml.jaxb.Id;
-import org.hibernate.jpa.metamodel.xml.jaxb.ManyToOne;
-import org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass;
-import org.hibernate.jpa.metamodel.xml.jaxb.OneToMany;
-import org.hibernate.jpa.metamodel.xml.jaxb.OneToOne;
+import org.hibernate.jpamodelgen.IMetaAttribute;
+import org.hibernate.jpamodelgen.ImportContextImpl;
+import org.hibernate.jpamodelgen.IMetaEntity;
+import org.hibernate.jpamodelgen.ImportContext;
+import org.hibernate.jpamodelgen.xml.jaxb.Attributes;
+import org.hibernate.jpamodelgen.xml.jaxb.Basic;
+import org.hibernate.jpamodelgen.xml.jaxb.ElementCollection;
+import org.hibernate.jpamodelgen.xml.jaxb.Embeddable;
+import org.hibernate.jpamodelgen.xml.jaxb.EmbeddableAttributes;
+import org.hibernate.jpamodelgen.xml.jaxb.Entity;
+import org.hibernate.jpamodelgen.xml.jaxb.Id;
+import org.hibernate.jpamodelgen.xml.jaxb.ManyToOne;
+import org.hibernate.jpamodelgen.xml.jaxb.MappedSuperclass;
+import org.hibernate.jpamodelgen.xml.jaxb.OneToMany;
+import org.hibernate.jpamodelgen.xml.jaxb.OneToOne;
 
 /**
  * @author Hardy Ferentschik

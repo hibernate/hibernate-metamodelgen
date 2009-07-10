@@ -1,6 +1,6 @@
-package org.hibernate.jpa.metamodel.ap.annotation;
+package org.hibernate.jpamodelgen.annotation;
 
-import org.hibernate.jpa.metamodel.ap.IMetaCollection;
+import org.hibernate.jpamodelgen.IMetaCollection;
 
 import javax.lang.model.element.Element;
 

@@ -1,4 +1,4 @@
-package org.hibernate.jpa.metamodel.ap;
+package org.hibernate.jpamodelgen;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -9,7 +9,7 @@ import javax.persistence.AccessType;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.tools.Diagnostic;
 
-import org.hibernate.jpa.metamodel.ap.annotation.MetaEntity;
+import org.hibernate.jpamodelgen.annotation.MetaEntity;
 
 /**
  * @author Emmanuel Bernard

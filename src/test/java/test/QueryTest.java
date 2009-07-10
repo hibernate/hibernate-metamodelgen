@@ -139,8 +139,8 @@ public class QueryTest {
 		
 		n = qb.quot(x, y);
 		
-		javax.jpa.criteria.Order o = qb.asc(n);
-		javax.jpa.criteria.Order p = qb.ascending(s);
+		javax.jpamodelgen.criteria.Order o = qb.asc(n);
+		javax.jpamodelgen.criteria.Order p = qb.ascending(s);
 	}*/
 
 }

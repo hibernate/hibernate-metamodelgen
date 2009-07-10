@@ -15,21 +15,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.hibernate.jpa.metamodel.ap.xml;
+package org.hibernate.jpamodelgen.xml;
 
-import org.hibernate.jpa.metamodel.ap.IMetaSingleAttribute;
+import org.hibernate.jpamodelgen.IMetaCollection;
 
 /**
  * @author Hardy Ferentschik
  */
-public class XmlMetaSingleAttribute extends XmlMetaAttribute implements IMetaSingleAttribute {
+public class XmlMetaCollection extends XmlMetaAttribute implements IMetaCollection {
 
-    public XmlMetaSingleAttribute(XmlMetaEntity parent, String propertyName, String type) {
+    String collectionType;
+
+    public XmlMetaCollection(XmlMetaEntity parent, String propertyName, String type, String collectionType) {
         super(parent, propertyName, type);
+        this.collectionType = collectionType;
     }
 
-	@Override
-    public String getMetaType() {
-        return "javax.persistence.metamodel.SingularAttribute";
-    }
+    @Override
+	public String getMetaType() {
+		return collectionType;
+	}
 }

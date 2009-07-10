@@ -1,5 +1,5 @@
 // $Id$
-package org.hibernate.jpa.metamodel.ap;
+package org.hibernate.jpamodelgen;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,14 +32,14 @@ import javax.xml.validation.SchemaFactory;
 
 import org.xml.sax.SAXException;
 
-import org.hibernate.jpa.metamodel.ap.annotation.MetaEntity;
-import org.hibernate.jpa.metamodel.ap.xml.XmlMetaEntity;
-import org.hibernate.jpa.metamodel.xml.jaxb.Entity;
-import org.hibernate.jpa.metamodel.xml.jaxb.EntityMappings;
-import org.hibernate.jpa.metamodel.xml.jaxb.ObjectFactory;
-import org.hibernate.jpa.metamodel.xml.jaxb.Persistence;
-import org.hibernate.jpa.metamodel.xml.jaxb.PersistenceUnitDefaults;
-import org.hibernate.jpa.metamodel.xml.jaxb.PersistenceUnitMetadata;
+import org.hibernate.jpamodelgen.annotation.MetaEntity;
+import org.hibernate.jpamodelgen.xml.XmlMetaEntity;
+import org.hibernate.jpamodelgen.xml.jaxb.Entity;
+import org.hibernate.jpamodelgen.xml.jaxb.EntityMappings;
+import org.hibernate.jpamodelgen.xml.jaxb.ObjectFactory;
+import org.hibernate.jpamodelgen.xml.jaxb.Persistence;
+import org.hibernate.jpamodelgen.xml.jaxb.PersistenceUnitDefaults;
+import org.hibernate.jpamodelgen.xml.jaxb.PersistenceUnitMetadata;
 
 /**
  * Main annotation processor.
@@ -183,7 +183,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		if ( meta != null ) {
 			PersistenceUnitDefaults persistenceUnitDefaults = meta.getPersistenceUnitDefaults();
 			if ( persistenceUnitDefaults != null ) {
-				org.hibernate.jpa.metamodel.xml.jaxb.AccessType xmlAccessType = persistenceUnitDefaults.getAccess();
+				org.hibernate.jpamodelgen.xml.jaxb.AccessType xmlAccessType = persistenceUnitDefaults.getAccess();
 				if ( xmlAccessType != null ) {
 					accessType = mapXmlAccessTypeToJpaAccessType( xmlAccessType );
 				}
@@ -192,7 +192,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		return accessType;
 	}
 
-	private AccessType mapXmlAccessTypeToJpaAccessType(org.hibernate.jpa.metamodel.xml.jaxb.AccessType xmlAccessType) {
+	private AccessType mapXmlAccessTypeToJpaAccessType(org.hibernate.jpamodelgen.xml.jaxb.AccessType xmlAccessType) {
 		switch ( xmlAccessType ) {
 			case FIELD: {
 				return AccessType.FIELD;
@@ -244,8 +244,8 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 	private void parseEmbeddable(EntityMappings mappings, AccessType accessType) {
 		String packageName = mappings.getPackage();
-		Collection<org.hibernate.jpa.metamodel.xml.jaxb.Embeddable> embeddables = mappings.getEmbeddable();
-		for ( org.hibernate.jpa.metamodel.xml.jaxb.Embeddable embeddable : embeddables ) {
+		Collection<org.hibernate.jpamodelgen.xml.jaxb.Embeddable> embeddables = mappings.getEmbeddable();
+		for ( org.hibernate.jpamodelgen.xml.jaxb.Embeddable embeddable : embeddables ) {
 			String fullyQualifiedClassName = packageName + "." + embeddable.getClazz();
 
 			if ( !xmlMappedTypeExists( fullyQualifiedClassName ) ) {
@@ -272,8 +272,8 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 	private void parseMappedSuperClass(EntityMappings mappings, AccessType accessType) {
 		String packageName = mappings.getPackage();
-		Collection<org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass> mappedSuperClasses = mappings.getMappedSuperclass();
-		for ( org.hibernate.jpa.metamodel.xml.jaxb.MappedSuperclass mappedSuperClass : mappedSuperClasses ) {
+		Collection<org.hibernate.jpamodelgen.xml.jaxb.MappedSuperclass> mappedSuperClasses = mappings.getMappedSuperclass();
+		for ( org.hibernate.jpamodelgen.xml.jaxb.MappedSuperclass mappedSuperClass : mappedSuperClasses ) {
 			String fullyQualifiedClassName = packageName + "." + mappedSuperClass.getClazz();
 
 			if ( !xmlMappedTypeExists( fullyQualifiedClassName ) ) {

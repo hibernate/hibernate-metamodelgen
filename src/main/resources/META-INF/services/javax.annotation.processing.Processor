@@ -1,1 +1,1 @@
-org.hibernate.jpa.metamodel.ap.JPAMetaModelEntityProcessor
+org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor

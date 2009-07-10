@@ -1,4 +1,4 @@
-package org.hibernate.jpa.metamodel.ap;
+package org.hibernate.jpamodelgen;
 
 import java.util.HashMap;
 import java.util.Iterator;

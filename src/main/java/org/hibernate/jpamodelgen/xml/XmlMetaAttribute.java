@@ -15,9 +15,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.hibernate.jpa.metamodel.ap.xml;
+package org.hibernate.jpamodelgen.xml;
 
-import org.hibernate.jpa.metamodel.ap.IMetaAttribute;
+import org.hibernate.jpamodelgen.IMetaAttribute;
 
 /**
  * @author Hardy Ferentschik

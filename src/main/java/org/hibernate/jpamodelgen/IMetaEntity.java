@@ -15,17 +15,31 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.hibernate.jpa.metamodel.ap;
+package org.hibernate.jpamodelgen;
+
+import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
+import java.util.List;
 
 /**
  * @author Hardy Ferentschik
  */
-public interface IMetaAttribute {
-    String getDeclarationString();
+public interface IMetaEntity extends ImportContext {
+    String getSimpleName();
 
-    String getMetaType();
+    String getQualifiedName();
 
-    String getPropertyName();
+    String getPackageName();
 
-   String getTypeDeclaration(); 
+    List<IMetaAttribute> getMembers();
+
+    String generateImports();
+
+    String importType(String fqcn);
+
+    String staticImport(String fqcn, String member);
+
+    String importType(Name qualifiedName);
+
+	TypeElement getTypeElement();
 }

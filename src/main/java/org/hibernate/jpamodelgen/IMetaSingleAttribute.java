@@ -15,24 +15,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.hibernate.jpa.metamodel.ap.xml;
-
-import org.hibernate.jpa.metamodel.ap.IMetaCollection;
+package org.hibernate.jpamodelgen;
 
 /**
  * @author Hardy Ferentschik
  */
-public class XmlMetaCollection extends XmlMetaAttribute implements IMetaCollection {
-
-    String collectionType;
-
-    public XmlMetaCollection(XmlMetaEntity parent, String propertyName, String type, String collectionType) {
-        super(parent, propertyName, type);
-        this.collectionType = collectionType;
-    }
-
-    @Override
-	public String getMetaType() {
-		return collectionType;
-	}
+public interface IMetaSingleAttribute extends IMetaAttribute {
 }

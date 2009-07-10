@@ -1,4 +1,4 @@
-package org.hibernate.jpa.metamodel.ap;
+package org.hibernate.jpamodelgen;
 
 public interface ImportContext {
 

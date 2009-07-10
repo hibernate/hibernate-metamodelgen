@@ -1,6 +1,6 @@
-package org.hibernate.jpa.metamodel.ap.annotation;
+package org.hibernate.jpamodelgen.annotation;
 
-import org.hibernate.jpa.metamodel.ap.IMetaAttribute;
+import org.hibernate.jpamodelgen.IMetaAttribute;
 
 import java.beans.Introspector;
 

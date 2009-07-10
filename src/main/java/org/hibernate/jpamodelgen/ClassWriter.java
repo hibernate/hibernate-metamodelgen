@@ -1,4 +1,4 @@
-package org.hibernate.jpa.metamodel.ap;
+package org.hibernate.jpamodelgen;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
