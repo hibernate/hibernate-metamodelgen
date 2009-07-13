@@ -59,7 +59,7 @@
                 <exclude>*-sources.jar</exclude>
             </excludes>
             <includes>
-                <include>hibernate-*.jar</include>
+                <include>jpamodelgen-*.jar</include>
             </includes>
         </fileSet>
         <fileSet>
