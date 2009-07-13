@@ -11,11 +11,23 @@
 
     <developers>
         <developer>
+            <id>epbernard</id>
+            <name>Emmanuel Bernard</name>
+            <email>emmanuel@hibernate.org</email>
+            <url>http://in.relation.to/Bloggers/Emmanuel</url>
+        </developer>        
+        <developer>
             <id>hardy.ferentschik</id>
             <name>Hardy Ferentschik</name>
             <email>hferents@redhat.com</email>
             <organization>JBoss, a division of Red Hat</organization>
             <url>http://in.relation.to/Bloggers/Hardy</url>
+        </developer>
+        <developer>
+            <id>max.andersen@jboss.com</id>
+            <name>Max Andersen</name>
+            <email>max.andersen@redhat.com</email>
+            <url>http://in.relation.to/Bloggers/Max</url>
         </developer>
     </developers>
 
