@@ -17,11 +17,7 @@
 */
 package test;
 
-import java.lang.reflect.Field;
-
 import org.testng.annotations.Test;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 import org.testng.Assert;
 
 /**
@@ -88,7 +84,7 @@ public class AccessTypeTest {
 	private boolean isFieldHere(String className, String fieldName) throws ClassNotFoundException {
 		Class<?> user_ = Class.forName( className );
 		try {
-			final Field field = user_.getField( fieldName );
+			user_.getField( fieldName );
 			return true;
 		}
 		catch (NoSuchFieldException e) {

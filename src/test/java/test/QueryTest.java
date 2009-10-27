@@ -21,13 +21,13 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Set;
 import javax.persistence.Tuple;
+import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Join;
 import static javax.persistence.criteria.JoinType.INNER;
 import javax.persistence.criteria.ListJoin;
 import javax.persistence.criteria.Path;
-import javax.persistence.criteria.QueryBuilder;
 import javax.persistence.criteria.Root;
 
 import model.Item;
@@ -50,7 +50,7 @@ import model.Shop_;
  */
 public class QueryTest {
 
-	QueryBuilder qb;
+	CriteriaBuilder qb;
 
 	public void test() {
 		CriteriaQuery<Tuple> q = qb.createTupleQuery();
