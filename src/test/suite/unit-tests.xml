@@ -3,7 +3,7 @@
 <suite name="Hibernate Model Generator Tests" verbose="1">
     <test name="Unit tests">
         <packages>
-            <package name="test"/>
+            <package name="org.hibernate.jpamodelgen.test"/>
         </packages>
     </test>
 </suite>
