@@ -351,11 +351,11 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			ormStream = fileObject.openInputStream();
 		}
 		catch ( IOException e1 ) {
-			processingEnv.getMessager()
-					.printMessage(
-							Diagnostic.Kind.WARNING,
-							"Could not load " + resource + " using processingEnv.getFiler().getResource(). Using classpath..."
-					);
+//			processingEnv.getMessager()
+//					.printMessage(
+//							Diagnostic.Kind.WARNING,
+//							"Could not load " + resource + " using processingEnv.getFiler().getResource(). Using classpath..."
+//					);
 
 			// TODO
 			// unfortunately, the Filer.getResource API seems not to be able to load from /META-INF. One gets a

@@ -3,7 +3,8 @@
 <suite name="Hibernate Model Generator Tests" verbose="1">
     <test name="Unit tests">
         <packages>
-            <package name="org.hibernate.jpamodelgen.test"/>
+            <package name="org.hibernate.jpamodelgen.test.accesstype"/>
+            <package name="org.hibernate.jpamodelgen.test.xmlmapped"/>
         </packages>
     </test>
 </suite>
