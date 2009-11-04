@@ -1,4 +1,4 @@
-// $Id: Customer.java 17899 2009-11-03 14:52:05Z hardy.ferentschik $
+// $Id$
 /*
 * JBoss, Home of Professional Open Source
 * Copyright 2008, Red Hat Middleware LLC, and individual contributors
