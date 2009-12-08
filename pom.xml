@@ -4,7 +4,7 @@
 
     <groupId>org.hibernate</groupId>
     <artifactId>hibernate-jpamodelgen</artifactId>
-    <version>1.0.0.Beta2-SNAPSHOT</version>
+    <version>1.0.0.Beta1-SNAPSHOT</version>
 
     <name>JPA 2 Static-Metamodel Generator</name>
     <description>Annotation Processor to generate JPA 2 static metamodel classes</description>
@@ -229,9 +229,10 @@
 
     <distributionManagement>
         <repository>
+            <!-- Copy the dist to the local checkout of the JBoss maven2 repo ${maven.repository.root} -->
+            <!-- It is anticipated that ${maven.repository.root} be set in user's settings.xml -->
             <id>repository.jboss.org</id>
-            <name>JBoss Release Repository</name>
-            <url>scm:svn:https://svn.jboss.org/repos/repository.jboss.org/maven2</url>
+            <url>file://${maven.repository.root}</url>
         </repository>
         <snapshotRepository>
             <id>snapshots.jboss.org</id>
