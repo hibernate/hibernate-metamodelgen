@@ -33,6 +33,11 @@
         </license>
     </licenses>
 
+    <issueManagement>
+        <system>JIRA</system>
+        <url>http://opensource.atlassian.com/projects/hibernate/browse/METAGEN</url>
+    </issueManagement>
+
     <scm>
         <connection>scm:svn:https://svn.jboss.org/repos/hibernate/jpamodelgen/trunk</connection>
         <url>http://fisheye.jboss.org/browse/Hibernate/jpamodelgen/trunk</url>
