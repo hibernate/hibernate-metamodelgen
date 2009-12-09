@@ -11,7 +11,7 @@
 
     <inceptionYear>2009</inceptionYear>
 
-    <dependencies>c
+    <dependencies>
         <dependency>
             <groupId>org.hibernate.java-persistence</groupId>
             <artifactId>jpa-api</artifactId>
