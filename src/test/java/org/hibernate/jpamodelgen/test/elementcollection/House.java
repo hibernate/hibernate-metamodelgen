@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 /*
 * JBoss, Home of Professional Open Source
 * Copyright 2009, Red Hat, Inc. and/or its affiliates, and individual contributors
@@ -29,7 +29,7 @@ import javax.persistence.MapKeyColumn;
 public class House {
 	private Map<String, Room> roomsByName;
 
-	@ElementCollection
+	@ElementCollection(targetClass = Room.class)
 	@MapKeyColumn(name = "room_name")
 	public Map<String, Room> getRoomsByName() {
 		return roomsByName;
