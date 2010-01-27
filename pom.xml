@@ -1,12 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.hibernate</groupId>
     <artifactId>hibernate-jpamodelgen</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0-Beta-3</version>
 
     <name>JPA 2 Static-Metamodel Generator</name>
     <description>Annotation Processor to generate JPA 2 static metamodel classes</description>
@@ -41,8 +39,8 @@
     </issueManagement>
 
     <scm>
-        <connection>scm:svn:https://svn.jboss.org/repos/hibernate/jpamodelgen/trunk</connection>
-        <url>http://fisheye.jboss.org/browse/Hibernate/jpamodelgen/trunk</url>
+        <connection>scm:svn:https://svn.jboss.org/repos/hibernate/jpamodelgen/tags/hibernate-jpamodelgen-1.0.0-Beta-3</connection>
+        <url>http://fisheye.jboss.org/browse/Hibernate/jpamodelgen/tags/hibernate-jpamodelgen-1.0.0-Beta-3</url>
     </scm>
 
     <developers>
