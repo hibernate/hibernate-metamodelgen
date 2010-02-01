@@ -62,16 +62,14 @@ public class XmlMetaEntity implements MetaEntity {
 		COLLECTIONS.put( "java.util.Map", "javax.persistence.metamodel.MapAttribute" );
 	}
 
-	final private String clazzName;
+	private final String clazzName;
+	private final String packageName;
+	private final ImportContext importContext;
+	private final List<MetaAttribute> members = new ArrayList<MetaAttribute>();
+	private final TypeElement element;
+	private final Context context;
 
-	final private String packageName;
-
-	final private ImportContext importContext;
-
-	final private List<MetaAttribute> members = new ArrayList<MetaAttribute>();
-
-	private TypeElement element;
-	private Context context;
+	private boolean isMetaComplete;
 
 	public XmlMetaEntity(Entity ormEntity, String packageName, TypeElement element, Context context) {
 		this.clazzName = ormEntity.getClazz();
@@ -138,6 +136,11 @@ public class XmlMetaEntity implements MetaEntity {
 
 	public TypeElement getTypeElement() {
 		return element;
+	}
+
+	@Override
+	public boolean isMetaComplete() {
+		return isMetaComplete;
 	}
 
 	private String[] getCollectionType(String propertyName, String explicitTargetEntity) {

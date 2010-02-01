@@ -48,8 +48,6 @@ import org.hibernate.jpamodelgen.xml.jaxb.PersistenceUnitMetadata;
  * @author Hardy Ferentschik
  */
 public class XmlParser {
-
-	private static final String PERSISTENCE_XML = "/META-INF/persistence.xml";
 	private static final String ORM_XML = "/META-INF/orm.xml";
 	private static final String PERSISTENCE_XML_XSD = "persistence_2_0.xsd";
 	private static final String ORM_XSD = "orm_2_0.xsd";
@@ -63,17 +61,24 @@ public class XmlParser {
 	}
 
 	public void parsePersistenceXml() {
-		Persistence persistence = parseXml( PERSISTENCE_XML, Persistence.class, PERSISTENCE_XML_XSD );
-		if ( persistence != null ) {
-			List<Persistence.PersistenceUnit> persistenceUnits = persistence.getPersistenceUnit();
-			for ( Persistence.PersistenceUnit unit : persistenceUnits ) {
-				List<String> mappingFiles = unit.getMappingFile();
-				for ( String mappingFile : mappingFiles ) {
-					parsingOrmXml( mappingFile );
-				}
+		// /META-INF/orm.xml is implicit
+		parsingOrmXml( ORM_XML );
+
+		Persistence persistence = parseXml(
+				context.getPersistenceXmlLocation(), Persistence.class, PERSISTENCE_XML_XSD
+		);
+		if ( persistence == null ) {
+			return;
+		}
+
+		List<Persistence.PersistenceUnit> persistenceUnits = persistence.getPersistenceUnit();
+		for ( Persistence.PersistenceUnit unit : persistenceUnits ) {
+			List<String> mappingFiles = unit.getMappingFile();
+			for ( String mappingFile : mappingFiles ) {
+				parsingOrmXml( mappingFile );
 			}
 		}
-		parsingOrmXml( ORM_XML ); // /META-INF/orm.xml is implicit
+
 	}
 
 	private void parsingOrmXml(String resource) {
@@ -83,6 +88,7 @@ public class XmlParser {
 		}
 
 		AccessType accessType = determineGlobalAccessType( mappings );
+		context.setPersistenceUnitCompletelyXmlConfigured( determineGlobalXmlMetadataCompleteness( mappings ) );
 
 		parseEntities( mappings, accessType );
 		parseEmbeddable( mappings, accessType );
@@ -108,13 +114,13 @@ public class XmlParser {
 					context
 			);
 
-			if ( context.getMetaEntitiesToProcess().containsKey( fullyQualifiedClassName ) ) {
+			if ( context.getMetaEntities().containsKey( fullyQualifiedClassName ) ) {
 				context.logMessage(
 						Diagnostic.Kind.WARNING,
 						fullyQualifiedClassName + " was already processed once. Skipping second occurance."
 				);
 			}
-			context.getMetaEntitiesToProcess().put( fullyQualifiedClassName, metaEntity );
+			context.getMetaEntities().put( fullyQualifiedClassName, metaEntity );
 		}
 	}
 
@@ -137,13 +143,13 @@ public class XmlParser {
 					context
 			);
 
-			if ( context.getMetaSuperclassAndEmbeddableToProcess().containsKey( fullyQualifiedClassName ) ) {
+			if ( context.getMetaSuperclassAndEmbeddable().containsKey( fullyQualifiedClassName ) ) {
 				context.logMessage(
 						Diagnostic.Kind.WARNING,
 						fullyQualifiedClassName + " was already processed once. Skipping second occurance."
 				);
 			}
-			context.getMetaSuperclassAndEmbeddableToProcess().put( fullyQualifiedClassName, metaEntity );
+			context.getMetaSuperclassAndEmbeddable().put( fullyQualifiedClassName, metaEntity );
 		}
 	}
 
@@ -167,13 +173,13 @@ public class XmlParser {
 					context
 			);
 
-			if ( context.getMetaSuperclassAndEmbeddableToProcess().containsKey( fullyQualifiedClassName ) ) {
+			if ( context.getMetaSuperclassAndEmbeddable().containsKey( fullyQualifiedClassName ) ) {
 				context.logMessage(
 						Diagnostic.Kind.WARNING,
 						fullyQualifiedClassName + " was already processed once. Skipping second occurance."
 				);
 			}
-			context.getMetaSuperclassAndEmbeddableToProcess().put( fullyQualifiedClassName, metaEntity );
+			context.getMetaSuperclassAndEmbeddable().put( fullyQualifiedClassName, metaEntity );
 		}
 	}
 
@@ -283,7 +289,6 @@ public class XmlParser {
 		return utils.getTypeElement( fullyQualifiedClassName );
 	}
 
-
 	private AccessType determineGlobalAccessType(EntityMappings mappings) {
 		AccessType accessType = DEFAULT_XML_ACCESS_TYPE;
 
@@ -303,6 +308,15 @@ public class XmlParser {
 			}
 		}
 		return accessType;
+	}
+
+	private boolean determineGlobalXmlMetadataCompleteness(EntityMappings mappings) {
+		boolean metadataComplete = false;
+		PersistenceUnitMetadata puMetadata = mappings.getPersistenceUnitMetadata();
+		if ( puMetadata != null && puMetadata.getXmlMappingMetadataComplete() != null ) {
+			metadataComplete = true;
+		}
+		return metadataComplete;
 	}
 
 	private AccessType mapXmlAccessTypeToJpaAccessType(org.hibernate.jpamodelgen.xml.jaxb.AccessType xmlAccessType) {

@@ -17,6 +17,9 @@
 */
 package org.hibernate.jpamodelgen.test.accesstype;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.testng.annotations.Test;
 
 import org.hibernate.jpamodelgen.test.util.CompilationTest;
@@ -90,5 +93,10 @@ public class AccessTypeTest extends CompilationTest {
 	@Override
 	protected String getTestPackage() {
 		return Product.class.getPackage().getName();
+	}
+
+	@Override
+	protected Map<String, String> getProcessorOptions() {
+		return Collections.emptyMap();
 	}
 }

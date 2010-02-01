@@ -52,6 +52,7 @@ import static javax.lang.model.SourceVersion.RELEASE_6;
 @SupportedOptions({ JPAMetaModelEntityProcessor.DEBUG_OPTION })
 public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	public static final String DEBUG_OPTION = "debug";
+	public static final String PERSISTENCE_XML_OPTION = "persistenceXml";
 	private static final Boolean ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS = Boolean.FALSE;
 
 	private boolean xmlProcessed = false;
@@ -87,6 +88,10 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
 		}
 
+		if ( context.isPersistenceUnitCompletelyXmlConfigured() ) {
+			return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
+		}
+
 		Set<? extends Element> elements = roundEnvironment.getRootElements();
 		for ( Element element : elements ) {
 			context.logMessage( Diagnostic.Kind.OTHER, "Processing " + element.toString() );
@@ -97,17 +102,17 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	}
 
 	private void createMetaModelClasses() {
-		for ( MetaEntity entity : context.getMetaEntitiesToProcess().values() ) {
+		for ( MetaEntity entity : context.getMetaEntities().values() ) {
 			context.logMessage( Diagnostic.Kind.OTHER, "Writing meta model for " + entity );
 			ClassWriter.writeFile( entity, context );
 		}
 
 		//process left over, in most cases is empty
 		for ( String className : context.getElementsAlreadyProcessed() ) {
-			context.getMetaSuperclassAndEmbeddableToProcess().remove( className );
+			context.getMetaSuperclassAndEmbeddable().remove( className );
 		}
 
-		for ( MetaEntity entity : context.getMetaSuperclassAndEmbeddableToProcess().values() ) {
+		for ( MetaEntity entity : context.getMetaSuperclassAndEmbeddable().values() ) {
 			context.logMessage( Diagnostic.Kind.OTHER, "Writing meta model for " + entity );
 			ClassWriter.writeFile( entity, context );
 		}
@@ -129,22 +134,23 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	}
 
 	private void handleRootElementAnnotationMirrors(final Element element) {
-
 		List<? extends AnnotationMirror> annotationMirrors = element.getAnnotationMirrors();
-
 		for ( AnnotationMirror mirror : annotationMirrors ) {
 			if ( element.getKind() == ElementKind.CLASS ) {
 				if ( TypeUtils.isAnnotationMirrorOfType( mirror, Entity.class ) ) {
 					AnnotationMetaEntity metaEntity = new AnnotationMetaEntity( ( TypeElement ) element, context );
-					// TODO instead of just adding the entity we have to do some merging.
-					context.getMetaEntitiesToProcess().put( metaEntity.getQualifiedName(), metaEntity );
+					MetaEntity alreadyExistingMetaEntity = context.getMetaEntities()
+							.get( metaEntity.getQualifiedName() );
+					if ( alreadyExistingMetaEntity != null && alreadyExistingMetaEntity.isMetaComplete() ) {
+						continue;
+					}
+					context.getMetaEntities().put( metaEntity.getQualifiedName(), metaEntity );
 				}
 				else if ( TypeUtils.isAnnotationMirrorOfType( mirror, MappedSuperclass.class )
 						|| TypeUtils.isAnnotationMirrorOfType( mirror, Embeddable.class ) ) {
 					AnnotationMetaEntity metaEntity = new AnnotationMetaEntity( ( TypeElement ) element, context );
-
 					// TODO instead of just adding the entity we have to do some merging.
-					context.getMetaSuperclassAndEmbeddableToProcess().put( metaEntity.getQualifiedName(), metaEntity );
+					context.getMetaSuperclassAndEmbeddable().put( metaEntity.getQualifiedName(), metaEntity );
 				}
 			}
 		}

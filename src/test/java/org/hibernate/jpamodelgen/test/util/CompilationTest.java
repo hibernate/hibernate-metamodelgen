@@ -21,12 +21,18 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.testng.FileAssert.fail;
 
@@ -34,19 +40,22 @@ import static org.testng.FileAssert.fail;
  * @author Hardy Ferentschik
  */
 public abstract class CompilationTest {
-
+	private static final Logger log = LoggerFactory.getLogger( CompilationTest.class );
 	private static final String PATH_SEPARATOR = System.getProperty( "file.separator" );
+	private static final String ANNOTATION_PROCESSOR_OPTION_PREFIX = "-A";
+	private static final String SOURCE_BASE_DIR_PROPERTY = "sourceBaseDir";
+	private static final String OUT_BASE_DIR_PROPERTY = "outBaseDir";
 	private static final String sourceBaseDir;
 	private static final String outBaseDir;
 
 	static {
-		String tmp = System.getProperty( "sourceBaseDir" );
+		String tmp = System.getProperty( SOURCE_BASE_DIR_PROPERTY );
 		if ( tmp == null ) {
 			fail( "The system property sourceBaseDir has to be set and point to the base directory of the test java sources." );
 		}
 		sourceBaseDir = tmp;
 
-		tmp = System.getProperty( "outBaseDir" );
+		tmp = System.getProperty( OUT_BASE_DIR_PROPERTY );
 		if ( tmp == null ) {
 			fail( "The system property outBaseDir has to be set and point to the base directory of the test output directory." );
 		}
@@ -59,7 +68,7 @@ public abstract class CompilationTest {
 			compile();
 		}
 		catch ( Exception e ) {
-			e.printStackTrace(  );
+			e.printStackTrace();
 			fail( "Unable to compile test sources. " + e.getMessage() );
 		}
 	}
@@ -91,18 +100,25 @@ public abstract class CompilationTest {
 				null, fileManager, diagnostics, options, null, compilationUnits
 		);
 		task.call();
-//		for ( Diagnostic diagnostic : diagnostics.getDiagnostics() ) {
-//			System.out.println( diagnostic.getMessage( null ) );
-//		}
+		for ( Diagnostic diagnostic : diagnostics.getDiagnostics() ) {
+			log.debug( diagnostic.getMessage( null ) );
+		}
 	}
 
 	private List<String> createJavaOptions() {
-		// TODO
-		// passing any other options as -d seems to throw IllegalArgumentExceptions. I would like to set -s for example
-		// in order to see whether recursive recompilation would work then. Also '-proc only' could be interesting
 		List<String> options = new ArrayList<String>();
 		options.add( "-d" );
 		options.add( outBaseDir );
+
+		// add any additional options specified by the test
+		for ( Map.Entry<String, String> entry : getProcessorOptions().entrySet() ) {
+			StringBuilder builder = new StringBuilder();
+			builder.append( ANNOTATION_PROCESSOR_OPTION_PREFIX );
+			builder.append( entry.getKey() );
+			builder.append( "=" );
+			builder.append( entry.getValue() );
+			options.add( builder.toString() );
+		}
 		return options;
 	}
 
@@ -117,16 +133,16 @@ public abstract class CompilationTest {
 			}
 		};
 		final File[] files = packageDir.listFiles( javaFileFilter );
-		if (files == null) {
+		if ( files == null ) {
 			throw new RuntimeException( "Cannot find package directory (is your base dir correct?): " + packageDirName );
 		}
-		for ( File file : files ) {
-			javaFiles.add( file );
-		}
+		javaFiles.addAll( Arrays.asList( files ) );
 		return javaFiles;
 	}
 
 	abstract protected String getTestPackage();
+
+	abstract protected Map<String, String> getProcessorOptions();
 }
 
 

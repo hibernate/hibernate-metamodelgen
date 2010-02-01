@@ -17,6 +17,9 @@
 */
 package org.hibernate.jpamodelgen.test.arraytype;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.testng.annotations.Test;
 
 import org.hibernate.jpamodelgen.test.util.CompilationTest;
@@ -49,5 +52,10 @@ public class ArrayTest extends CompilationTest {
 	@Override
 	protected String getTestPackage() {
 		return Image.class.getPackage().getName();
+	}
+
+	@Override
+	protected Map<String, String> getProcessorOptions() {
+		return Collections.emptyMap();
 	}
 }

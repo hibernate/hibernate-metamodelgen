@@ -36,6 +36,7 @@ import static org.testng.FileAssert.fail;
 public class TestUtil {
 
 	private static final String PATH_SEPARATOR = System.getProperty( "file.separator" );
+	private static final String PACKAGE_SEPARATOR = ".";
 	private static final String META_MODEL_CLASS_POSTFIX = "_";
 	private static final String outBaseDir;
 
@@ -78,7 +79,7 @@ public class TestUtil {
 		assertNotNull( clazz, "Class parameter cannot be null" );
 		String metaModelClassName = clazz.getName() + META_MODEL_CLASS_POSTFIX;
 		// generate the file name
-		String fileName = metaModelClassName.replace( ".", PATH_SEPARATOR );
+		String fileName = metaModelClassName.replace( PACKAGE_SEPARATOR, PATH_SEPARATOR );
 		fileName = fileName.concat( ".java" );
 		File sourceFile = new File( outBaseDir + PATH_SEPARATOR + fileName );
 		assertFalse( sourceFile.exists(), "There should be no source file: " + fileName );
@@ -156,6 +157,10 @@ public class TestUtil {
 			field = null;
 		}
 		return field;
+	}
+
+	public static String fcnToPath(String fcn) {
+		return fcn.replace( PACKAGE_SEPARATOR, PATH_SEPARATOR );
 	}
 }
 

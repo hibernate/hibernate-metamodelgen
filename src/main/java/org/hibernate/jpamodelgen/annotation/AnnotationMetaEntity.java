@@ -139,6 +139,11 @@ public class AnnotationMetaEntity implements MetaEntity {
 		return membersFound;
 	}
 
+	@Override
+	public boolean isMetaComplete() {
+		return false;
+	}
+
 	private void addPersistentMembers(
 			List<MetaAttribute> membersFound,
 			AccessType elementAccessType,
@@ -212,7 +217,7 @@ public class AnnotationMetaEntity implements MetaEntity {
 		AccessType accessType = context.getAccessType( searchedElement );
 
 		if ( defaultAccessTypeForHierarchy == null ) {
-			this.defaultAccessTypeForHierarchy = context.getDefaultAccessTypeForHerarchy( searchedElement );
+			this.defaultAccessTypeForHierarchy = context.getDefaultAccessTypeForHierarchy( searchedElement );
 		}
 		if ( accessType != null ) {
 			context.logMessage( Diagnostic.Kind.OTHER, "Found in cache" + searchedElement + ":" + accessType );
@@ -249,7 +254,7 @@ public class AnnotationMetaEntity implements MetaEntity {
 							accessType = kind == ElementKind.FIELD ? AccessType.FIELD : AccessType.PROPERTY;
 							//FIXME enlever in niveau
 							if ( defaultAccessTypeForHierarchy == null ) {
-								this.defaultAccessTypeForHierarchy = context.getDefaultAccessTypeForHerarchy(
+								this.defaultAccessTypeForHierarchy = context.getDefaultAccessTypeForHierarchy(
 										searchedElement
 								);
 								//we've discovered the class hierarchy, let's cache it

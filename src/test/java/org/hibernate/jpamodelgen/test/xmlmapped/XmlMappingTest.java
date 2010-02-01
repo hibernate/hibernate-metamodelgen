@@ -17,6 +17,9 @@
 */
 package org.hibernate.jpamodelgen.test.xmlmapped;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.testng.annotations.Test;
 
 import org.hibernate.jpamodelgen.test.util.CompilationTest;
@@ -99,6 +102,11 @@ public class XmlMappingTest extends CompilationTest {
 
 	@Override
 	protected String getTestPackage() {
-		return Address.class.getPackage().getName();
+		return XmlMappingTest.class.getPackage().getName();
+	}
+
+	@Override
+	protected Map<String, String> getProcessorOptions() {
+		return Collections.emptyMap();
 	}
 }

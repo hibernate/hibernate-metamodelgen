@@ -35,16 +35,21 @@ import org.hibernate.jpamodelgen.util.TypeUtils;
  * @author Emmanuel Bernard
  */
 public class Context {
+	private static final String PATH_SEPARATOR = System.getProperty( "file.separator" );
+	private static final String DEFAULT_PERSISTENCE_XML_LOCATION = "/META-INF/persistence.xml";
+	private final Map<String, MetaEntity> metaEntities = new HashMap<String, MetaEntity>();
+	private final Map<String, MetaEntity> metaSuperclassAndEmbeddable = new HashMap<String, MetaEntity>();
 
-	private final Map<String, MetaEntity> metaEntitiesToProcess = new HashMap<String, MetaEntity>();
-	private final Map<String, MetaEntity> metaSuperclassAndEmbeddableToProcess = new HashMap<String, MetaEntity>();
+	private final ProcessingEnvironment pe;
+	private final boolean logDebug;
+	private final String persistenceXmlLocation;
 
-	private ProcessingEnvironment pe;
-	private boolean logDebug = false;
 
 	//used to cache access types
 	private Map<TypeElement, AccessTypeHolder> accessTypes = new HashMap<TypeElement, AccessTypeHolder>();
 	private Set<String> elementsAlreadyProcessed = new HashSet<String>();
+
+	private boolean isPersistenceUnitCompletelyXmlConfigured;
 
 	private static class AccessTypeHolder {
 		public AccessType elementAccessType;
@@ -53,22 +58,36 @@ public class Context {
 
 	public Context(ProcessingEnvironment pe) {
 		this.pe = pe;
-		String debugParam = pe.getOptions().get( JPAMetaModelEntityProcessor.DEBUG_OPTION );
-		if ( debugParam != null && "true".equals( debugParam ) ) {
-			logDebug = true;
+
+		if ( pe.getOptions().get( JPAMetaModelEntityProcessor.PERSISTENCE_XML_OPTION ) != null ) {
+			String tmp = pe.getOptions().get( JPAMetaModelEntityProcessor.PERSISTENCE_XML_OPTION );
+			if ( !tmp.startsWith( PATH_SEPARATOR ) ) {
+				tmp = PATH_SEPARATOR + tmp;
+			}
+			persistenceXmlLocation = tmp;
 		}
+		else {
+			persistenceXmlLocation = DEFAULT_PERSISTENCE_XML_LOCATION;
+		}
+
+		logDebug = Boolean.parseBoolean( pe.getOptions().get( JPAMetaModelEntityProcessor.DEBUG_OPTION ) );
+
 	}
 
 	public ProcessingEnvironment getProcessingEnvironment() {
 		return pe;
 	}
 
-	public Map<String, MetaEntity> getMetaEntitiesToProcess() {
-		return metaEntitiesToProcess;
+	public String getPersistenceXmlLocation() {
+		return persistenceXmlLocation;
 	}
 
-	public Map<String, MetaEntity> getMetaSuperclassAndEmbeddableToProcess() {
-		return metaSuperclassAndEmbeddableToProcess;
+	public Map<String, MetaEntity> getMetaEntities() {
+		return metaEntities;
+	}
+
+	public Map<String, MetaEntity> getMetaSuperclassAndEmbeddable() {
+		return metaSuperclassAndEmbeddable;
 	}
 
 	public void addAccessType(TypeElement element, AccessType accessType) {
@@ -94,7 +113,7 @@ public class Context {
 		return typeHolder != null ? typeHolder.elementAccessType : null;
 	}
 
-	public AccessType getDefaultAccessTypeForHerarchy(TypeElement element) {
+	public AccessType getDefaultAccessTypeForHierarchy(TypeElement element) {
 		final AccessTypeHolder typeHolder = accessTypes.get( element );
 		return typeHolder != null ? typeHolder.hierarchyAccessType : null;
 	}
@@ -105,6 +124,7 @@ public class Context {
 
 	//only process Embeddable or Superclass
 	//does not work for Entity (risk of circularity)
+
 	public void processElement(TypeElement element, AccessType defaultAccessTypeForHierarchy) {
 		if ( elementsAlreadyProcessed.contains( element.getQualifiedName().toString() ) ) {
 			logMessage( Diagnostic.Kind.OTHER, "Element already processed (ignoring): " + element );
@@ -120,5 +140,13 @@ public class Context {
 			return;
 		}
 		pe.getMessager().printMessage( type, message );
+	}
+
+	public boolean isPersistenceUnitCompletelyXmlConfigured() {
+		return isPersistenceUnitCompletelyXmlConfigured;
+	}
+
+	public void setPersistenceUnitCompletelyXmlConfigured(boolean persistenceUnitCompletelyXmlConfigured) {
+		isPersistenceUnitCompletelyXmlConfigured = persistenceUnitCompletelyXmlConfigured;
 	}
 }

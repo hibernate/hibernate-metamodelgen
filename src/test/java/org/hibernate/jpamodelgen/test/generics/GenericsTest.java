@@ -17,6 +17,9 @@
 */
 package org.hibernate.jpamodelgen.test.generics;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.testng.annotations.Test;
 
 import org.hibernate.jpamodelgen.test.util.CompilationTest;
@@ -36,6 +39,11 @@ public class GenericsTest extends CompilationTest {
 
 	@Override
 	protected String getTestPackage() {
-		return Parent.class.getPackage().getName();
+		return GenericsTest.class.getPackage().getName();
+	}
+
+	@Override
+	protected Map<String, String> getProcessorOptions() {
+		return Collections.emptyMap();
 	}
 }

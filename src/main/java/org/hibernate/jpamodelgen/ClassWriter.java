@@ -112,8 +112,8 @@ public class ClassWriter {
 			//F..king Ch...t Have those people used their horrible APIs even once?
 			final Element superClassElement = ( ( DeclaredType ) superClass ).asElement();
 			String superClassName = ( ( TypeElement ) superClassElement ).getQualifiedName().toString();
-			if ( context.getMetaEntitiesToProcess().containsKey( superClassName )
-					|| context.getMetaSuperclassAndEmbeddableToProcess().containsKey( superClassName ) ) {
+			if ( context.getMetaEntities().containsKey( superClassName )
+					|| context.getMetaSuperclassAndEmbeddable().containsKey( superClassName ) ) {
 				pw.print( " extends " + superClassName + "_" );
 			}
 		}
