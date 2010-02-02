@@ -86,8 +86,7 @@ public class XmlMappingTest extends CompilationTest {
 		assertPresenceOfFieldInMetamodelFor( Boy.class, "nickNames", "nickNames field should exist" );
 		assertAttributeTypeInMetaModelFor( Boy.class, "nickNames", String.class, "target class overridden in xml" );
 	}
-
-
+	
 	@Test
 	public void testClassHierarchy() {
 		assertMetamodelClassGeneratedFor( Mammal.class );

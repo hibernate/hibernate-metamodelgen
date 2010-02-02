@@ -19,7 +19,6 @@ package org.hibernate.jpamodelgen.test.util;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +32,7 @@ import javax.tools.ToolProvider;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.BeforeClass;
 
 import static org.testng.FileAssert.fail;
 
@@ -63,17 +63,11 @@ public abstract class CompilationTest {
 	}
 
 	public CompilationTest() {
-		try {
-			TestUtil.clearOutputFolder();
-			compile();
-		}
-		catch ( Exception e ) {
-			e.printStackTrace();
-			fail( "Unable to compile test sources. " + e.getMessage() );
-		}
 	}
 
-	private void compile() throws IOException {
+	@BeforeClass
+	protected void compile() throws Exception {
+		TestUtil.deleteGeneratedSourceFiles( new File( outBaseDir ) );
 		List<String> options = createJavaOptions();
 
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();

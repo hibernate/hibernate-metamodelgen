@@ -61,24 +61,27 @@ public class XmlParser {
 	}
 
 	public void parsePersistenceXml() {
-		// /META-INF/orm.xml is implicit
-		parsingOrmXml( ORM_XML );
-
 		Persistence persistence = parseXml(
 				context.getPersistenceXmlLocation(), Persistence.class, PERSISTENCE_XML_XSD
 		);
-		if ( persistence == null ) {
-			return;
-		}
-
-		List<Persistence.PersistenceUnit> persistenceUnits = persistence.getPersistenceUnit();
-		for ( Persistence.PersistenceUnit unit : persistenceUnits ) {
-			List<String> mappingFiles = unit.getMappingFile();
-			for ( String mappingFile : mappingFiles ) {
-				parsingOrmXml( mappingFile );
+		if ( persistence != null ) {
+			List<Persistence.PersistenceUnit> persistenceUnits = persistence.getPersistenceUnit();
+			for ( Persistence.PersistenceUnit unit : persistenceUnits ) {
+				List<String> mappingFiles = unit.getMappingFile();
+				for ( String mappingFile : mappingFiles ) {
+					parsingOrmXml( mappingFile );
+				}
 			}
 		}
 
+		// /META-INF/orm.xml is implicit
+		parsingOrmXml( ORM_XML );
+
+		// not really part of the official spec, but the processor allows to specify mapping files directly as
+		// command line options
+		for ( String optionalOrmFiles : context.getOrmXmlFiles() ) {
+			parsingOrmXml( optionalOrmFiles );
+		}
 	}
 
 	private void parsingOrmXml(String resource) {

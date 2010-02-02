@@ -49,10 +49,15 @@ import static javax.lang.model.SourceVersion.RELEASE_6;
  */
 @SupportedAnnotationTypes("*")
 @SupportedSourceVersion(RELEASE_6)
-@SupportedOptions({ JPAMetaModelEntityProcessor.DEBUG_OPTION })
+@SupportedOptions({
+		JPAMetaModelEntityProcessor.DEBUG_OPTION,
+		JPAMetaModelEntityProcessor.PERSISTENCE_XML_OPTION,
+		JPAMetaModelEntityProcessor.ORM_XML_OPTION
+})
 public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	public static final String DEBUG_OPTION = "debug";
 	public static final String PERSISTENCE_XML_OPTION = "persistenceXml";
+	public static final String ORM_XML_OPTION = "ormXmlList";
 	private static final Boolean ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS = Boolean.FALSE;
 
 	private boolean xmlProcessed = false;
@@ -85,10 +90,6 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 		if ( !hostJPAAnnotations( annotations ) ) {
 			context.logMessage( Diagnostic.Kind.OTHER, "Current processing round does not contain entities" );
-			return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
-		}
-
-		if ( context.isPersistenceUnitCompletelyXmlConfigured() ) {
 			return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
 		}
 
@@ -137,22 +138,28 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		List<? extends AnnotationMirror> annotationMirrors = element.getAnnotationMirrors();
 		for ( AnnotationMirror mirror : annotationMirrors ) {
 			if ( element.getKind() == ElementKind.CLASS ) {
-				if ( TypeUtils.isAnnotationMirrorOfType( mirror, Entity.class ) ) {
-					AnnotationMetaEntity metaEntity = new AnnotationMetaEntity( ( TypeElement ) element, context );
-					MetaEntity alreadyExistingMetaEntity = context.getMetaEntities()
-							.get( metaEntity.getQualifiedName() );
-					if ( alreadyExistingMetaEntity != null && alreadyExistingMetaEntity.isMetaComplete() ) {
-						continue;
-					}
-					context.getMetaEntities().put( metaEntity.getQualifiedName(), metaEntity );
+				String fqn = ( ( TypeElement ) element ).getQualifiedName().toString();
+				MetaEntity alreadyExistingMetaEntity = context.getMetaEntities().get( fqn );
+				if ( alreadyExistingMetaEntity != null && alreadyExistingMetaEntity.isMetaComplete() ) {
+					String msg = "Skipping processing of annotations for " + fqn + " since xml configuration is metadata complete.";
+					context.logMessage( Diagnostic.Kind.OTHER, msg );
+					continue;
 				}
-				else if ( TypeUtils.isAnnotationMirrorOfType( mirror, MappedSuperclass.class )
-						|| TypeUtils.isAnnotationMirrorOfType( mirror, Embeddable.class ) ) {
-					AnnotationMetaEntity metaEntity = new AnnotationMetaEntity( ( TypeElement ) element, context );
-					// TODO instead of just adding the entity we have to do some merging.
-					context.getMetaSuperclassAndEmbeddable().put( metaEntity.getQualifiedName(), metaEntity );
-				}
+
+				AnnotationMetaEntity metaEntity = new AnnotationMetaEntity( ( TypeElement ) element, context );
+				addMetaEntityToContext( mirror, metaEntity );
 			}
+		}
+	}
+
+	private void addMetaEntityToContext(AnnotationMirror mirror, AnnotationMetaEntity metaEntity) {
+		if ( TypeUtils.isAnnotationMirrorOfType( mirror, Entity.class ) ) {
+			context.getMetaEntities().put( metaEntity.getQualifiedName(), metaEntity );
+		}
+		else if ( TypeUtils.isAnnotationMirrorOfType( mirror, MappedSuperclass.class )
+				|| TypeUtils.isAnnotationMirrorOfType( mirror, Embeddable.class ) ) {
+
+			context.getMetaSuperclassAndEmbeddable().put( metaEntity.getQualifiedName(), metaEntity );
 		}
 	}
 }

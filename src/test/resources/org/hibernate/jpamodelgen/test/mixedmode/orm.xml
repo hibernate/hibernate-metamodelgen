@@ -9,5 +9,10 @@
         <xml-mapping-metadata-complete/>
     </persistence-unit-metadata>
     <package>org.hibernate.jpamodelgen.test.mixedmode</package>
+    <entity class="Person" access="FIELD" metadata-complete="true">
+        <attributes>
+            <id name="id"/>
+        </attributes>
+    </entity>
 </entity-mappings>
 

@@ -77,9 +77,8 @@ public class XmlMetaEntity implements MetaEntity {
 		this.context = context;
 		this.importContext = new ImportContextImpl( getPackageName() );
 		this.element = element;
-		Attributes attributes = ormEntity.getAttributes();
-
-		parseAttributes( attributes );
+		initIsMetaComplete( ormEntity.isMetadataComplete() );
+		parseAttributes( ormEntity.getAttributes() );
 	}
 
 	public XmlMetaEntity(MappedSuperclass mappedSuperclass, String packageName, TypeElement element, Context context) {
@@ -88,8 +87,8 @@ public class XmlMetaEntity implements MetaEntity {
 		this.context = context;
 		this.importContext = new ImportContextImpl( getPackageName() );
 		this.element = element;
-		Attributes attributes = mappedSuperclass.getAttributes();
-		parseAttributes( attributes );
+		initIsMetaComplete( mappedSuperclass.isMetadataComplete() );
+		parseAttributes( mappedSuperclass.getAttributes() );
 	}
 
 	public XmlMetaEntity(Embeddable embeddable, String packageName, TypeElement element, Context context) {
@@ -98,8 +97,12 @@ public class XmlMetaEntity implements MetaEntity {
 		this.context = context;
 		this.importContext = new ImportContextImpl( getPackageName() );
 		this.element = element;
-		EmbeddableAttributes attributes = embeddable.getAttributes();
-		parseEmbeddableAttributes( attributes );
+		initIsMetaComplete( embeddable.isMetadataComplete() );
+		parseEmbeddableAttributes( embeddable.getAttributes() );
+	}
+
+	private void initIsMetaComplete(boolean metadataComplete) {
+		isMetaComplete = context.isPersistenceUnitCompletelyXmlConfigured() || metadataComplete;
 	}
 
 	public String getSimpleName() {

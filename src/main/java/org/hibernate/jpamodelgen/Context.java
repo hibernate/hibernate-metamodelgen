@@ -17,8 +17,11 @@
 */
 package org.hibernate.jpamodelgen;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -44,6 +47,7 @@ public class Context {
 	private final boolean logDebug;
 	private final String persistenceXmlLocation;
 
+	private final List<String> ormXmlFiles;
 
 	//used to cache access types
 	private Map<TypeElement, AccessTypeHolder> accessTypes = new HashMap<TypeElement, AccessTypeHolder>();
@@ -70,6 +74,20 @@ public class Context {
 			persistenceXmlLocation = DEFAULT_PERSISTENCE_XML_LOCATION;
 		}
 
+		if ( pe.getOptions().get( JPAMetaModelEntityProcessor.ORM_XML_OPTION ) != null ) {
+			String tmp = pe.getOptions().get( JPAMetaModelEntityProcessor.ORM_XML_OPTION );
+			ormXmlFiles = new ArrayList<String>();
+			for ( String ormFile : tmp.split( "," ) ) {
+				if ( !ormFile.startsWith( PATH_SEPARATOR ) ) {
+					ormFile = PATH_SEPARATOR + ormFile;
+				}
+				ormXmlFiles.add( ormFile );
+			}
+		}
+		else {
+			ormXmlFiles = Collections.emptyList();
+		}
+
 		logDebug = Boolean.parseBoolean( pe.getOptions().get( JPAMetaModelEntityProcessor.DEBUG_OPTION ) );
 
 	}
@@ -80,6 +98,10 @@ public class Context {
 
 	public String getPersistenceXmlLocation() {
 		return persistenceXmlLocation;
+	}
+
+	public List<String> getOrmXmlFiles() {
+		return ormXmlFiles;
 	}
 
 	public Map<String, MetaEntity> getMetaEntities() {

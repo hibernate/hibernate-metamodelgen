@@ -18,11 +18,14 @@
 package org.hibernate.jpamodelgen.test.util;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 
 import static org.testng.Assert.assertEquals;
@@ -34,7 +37,7 @@ import static org.testng.FileAssert.fail;
  * @author Hardy Ferentschik
  */
 public class TestUtil {
-
+	private static final Logger log = LoggerFactory.getLogger( TestUtil.class );
 	private static final String PATH_SEPARATOR = System.getProperty( "file.separator" );
 	private static final String PACKAGE_SEPARATOR = ".";
 	private static final String META_MODEL_CLASS_POSTFIX = "_";
@@ -51,11 +54,23 @@ public class TestUtil {
 	private TestUtil() {
 	}
 
-	public static void clearOutputFolder() {
-		File outDir = new File( outBaseDir );
-		File[] files = outDir.listFiles();
-		for ( File file : files ) {
-			file.delete();
+	public static void deleteGeneratedSourceFiles(File path) {
+		if ( path.exists() ) {
+			File[] files = path.listFiles( new MetaModelFilenameFilter() );
+			for ( File file : files ) {
+				if ( file.isDirectory() ) {
+					deleteGeneratedSourceFiles( file );
+				}
+				else {
+					boolean success = file.delete();
+					if ( success ) {
+						log.debug( file.getAbsolutePath() + " deleted successfully" );
+					}
+					else {
+						log.debug( "Failed to delete generated source file" + file.getAbsolutePath() );
+					}
+				}
+			}
 		}
 	}
 
@@ -161,6 +176,19 @@ public class TestUtil {
 
 	public static String fcnToPath(String fcn) {
 		return fcn.replace( PACKAGE_SEPARATOR, PATH_SEPARATOR );
+	}
+
+	private static class MetaModelFilenameFilter implements FileFilter {
+		@Override
+		public boolean accept(File pathname) {
+			if ( pathname.isDirectory() ) {
+				return true;
+			}
+			else {
+				return pathname.getAbsolutePath().endsWith( "_.java" )
+						|| pathname.getAbsolutePath().endsWith( "_.class" );
+			}
+		}
 	}
 }
 
