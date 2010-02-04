@@ -18,6 +18,7 @@
 package org.hibernate.jpamodelgen;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import javax.persistence.AccessType;
 import javax.tools.Diagnostic;
 
 import org.hibernate.jpamodelgen.annotation.AnnotationMetaEntity;
+import org.hibernate.jpamodelgen.model.MetaEntity;
 import org.hibernate.jpamodelgen.util.TypeUtils;
 
 /**
@@ -104,12 +106,40 @@ public class Context {
 		return ormXmlFiles;
 	}
 
-	public Map<String, MetaEntity> getMetaEntities() {
-		return metaEntities;
+	public boolean containsMetaEntity(String fqcn) {
+		return metaEntities.containsKey( fqcn );
 	}
 
-	public Map<String, MetaEntity> getMetaSuperclassAndEmbeddable() {
-		return metaSuperclassAndEmbeddable;
+	public MetaEntity getMetaEntity(String fqcn) {
+		return metaEntities.get( fqcn );
+	}
+
+	public Collection<MetaEntity> getMetaEntities() {
+		return metaEntities.values();
+	}
+
+	public void addMetaEntity(String fcqn, MetaEntity metaEntity) {
+		metaEntities.put( fcqn, metaEntity );
+	}
+
+	public boolean containsMetaSuperclassOrEmbeddable(String fqcn) {
+		return metaSuperclassAndEmbeddable.containsKey( fqcn );
+	}
+
+	public MetaEntity getMetaSuperclassOrEmbeddable(String fqcn) {
+		return metaSuperclassAndEmbeddable.get( fqcn );
+	}
+
+	public void addMetaSuperclassOrEmbeddable(String fcqn, MetaEntity metaEntity) {
+		metaSuperclassAndEmbeddable.put( fcqn, metaEntity );
+	}
+
+	public void removeMetaSuperclassOrEmbeddable(String fcqn) {
+		metaSuperclassAndEmbeddable.remove( fcqn );
+	}
+
+	public Collection<MetaEntity> getMetaSuperclassOrEmbeddable() {
+		return metaSuperclassAndEmbeddable.values();
 	}
 
 	public void addAccessType(TypeElement element, AccessType accessType) {

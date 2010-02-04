@@ -29,10 +29,10 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 
 import org.hibernate.jpamodelgen.Context;
-import org.hibernate.jpamodelgen.ImportContext;
+import org.hibernate.jpamodelgen.model.ImportContext;
 import org.hibernate.jpamodelgen.ImportContextImpl;
-import org.hibernate.jpamodelgen.MetaAttribute;
-import org.hibernate.jpamodelgen.MetaEntity;
+import org.hibernate.jpamodelgen.model.MetaAttribute;
+import org.hibernate.jpamodelgen.model.MetaEntity;
 import org.hibernate.jpamodelgen.MetaModelGenerationException;
 import org.hibernate.jpamodelgen.util.TypeUtils;
 import org.hibernate.jpamodelgen.xml.jaxb.Attributes;

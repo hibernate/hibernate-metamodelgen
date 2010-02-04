@@ -35,6 +35,7 @@ import javax.persistence.MappedSuperclass;
 import javax.tools.Diagnostic;
 
 import org.hibernate.jpamodelgen.annotation.AnnotationMetaEntity;
+import org.hibernate.jpamodelgen.model.MetaEntity;
 import org.hibernate.jpamodelgen.util.TypeUtils;
 import org.hibernate.jpamodelgen.xml.XmlParser;
 
@@ -103,17 +104,17 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	}
 
 	private void createMetaModelClasses() {
-		for ( MetaEntity entity : context.getMetaEntities().values() ) {
+		for ( MetaEntity entity : context.getMetaEntities()) {
 			context.logMessage( Diagnostic.Kind.OTHER, "Writing meta model for " + entity );
 			ClassWriter.writeFile( entity, context );
 		}
 
 		//process left over, in most cases is empty
 		for ( String className : context.getElementsAlreadyProcessed() ) {
-			context.getMetaSuperclassAndEmbeddable().remove( className );
+			context.removeMetaSuperclassOrEmbeddable( className );
 		}
 
-		for ( MetaEntity entity : context.getMetaSuperclassAndEmbeddable().values() ) {
+		for ( MetaEntity entity : context.getMetaSuperclassOrEmbeddable() ) {
 			context.logMessage( Diagnostic.Kind.OTHER, "Writing meta model for " + entity );
 			ClassWriter.writeFile( entity, context );
 		}
@@ -139,7 +140,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		for ( AnnotationMirror mirror : annotationMirrors ) {
 			if ( element.getKind() == ElementKind.CLASS ) {
 				String fqn = ( ( TypeElement ) element ).getQualifiedName().toString();
-				MetaEntity alreadyExistingMetaEntity = context.getMetaEntities().get( fqn );
+				MetaEntity alreadyExistingMetaEntity = context.getMetaEntity( fqn );
 				if ( alreadyExistingMetaEntity != null && alreadyExistingMetaEntity.isMetaComplete() ) {
 					String msg = "Skipping processing of annotations for " + fqn + " since xml configuration is metadata complete.";
 					context.logMessage( Diagnostic.Kind.OTHER, msg );
@@ -154,12 +155,12 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 	private void addMetaEntityToContext(AnnotationMirror mirror, AnnotationMetaEntity metaEntity) {
 		if ( TypeUtils.isAnnotationMirrorOfType( mirror, Entity.class ) ) {
-			context.getMetaEntities().put( metaEntity.getQualifiedName(), metaEntity );
+			context.addMetaEntity( metaEntity.getQualifiedName(), metaEntity );
 		}
 		else if ( TypeUtils.isAnnotationMirrorOfType( mirror, MappedSuperclass.class )
 				|| TypeUtils.isAnnotationMirrorOfType( mirror, Embeddable.class ) ) {
 
-			context.getMetaSuperclassAndEmbeddable().put( metaEntity.getQualifiedName(), metaEntity );
+			context.addMetaSuperclassOrEmbeddable( metaEntity.getQualifiedName(), metaEntity );
 		}
 	}
 }
