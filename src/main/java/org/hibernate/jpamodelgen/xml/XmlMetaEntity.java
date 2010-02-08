@@ -22,18 +22,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 
+import org.hibernate.jpamodelgen.AccessTypeInformation;
 import org.hibernate.jpamodelgen.Context;
-import org.hibernate.jpamodelgen.model.ImportContext;
 import org.hibernate.jpamodelgen.ImportContextImpl;
+import org.hibernate.jpamodelgen.MetaModelGenerationException;
+import org.hibernate.jpamodelgen.model.ImportContext;
 import org.hibernate.jpamodelgen.model.MetaAttribute;
 import org.hibernate.jpamodelgen.model.MetaEntity;
-import org.hibernate.jpamodelgen.MetaModelGenerationException;
+import org.hibernate.jpamodelgen.util.StringUtil;
 import org.hibernate.jpamodelgen.util.TypeUtils;
 import org.hibernate.jpamodelgen.xml.jaxb.Attributes;
 import org.hibernate.jpamodelgen.xml.jaxb.Basic;
@@ -68,15 +72,23 @@ public class XmlMetaEntity implements MetaEntity {
 	private final List<MetaAttribute> members = new ArrayList<MetaAttribute>();
 	private final TypeElement element;
 	private final Context context;
+	private final AccessTypeInformation accessTypeInfo;
 
 	private boolean isMetaComplete;
 
 	public XmlMetaEntity(Entity ormEntity, String packageName, TypeElement element, Context context) {
-		this.clazzName = ormEntity.getClazz();
+		String className = ormEntity.getClazz();
+		if ( StringUtil.isFullyQualified( className ) ) {
+			// we have to extract the package name from the fqcn. default package name gets ignored
+			packageName = StringUtil.packageNameFromFqcn( className );
+			className = StringUtil.classNameFromFqcn( className );
+		}
+		this.clazzName = className;
 		this.packageName = packageName;
 		this.context = context;
 		this.importContext = new ImportContextImpl( getPackageName() );
 		this.element = element;
+		this.accessTypeInfo = context.getAccessTypeInfo( getQualifiedName() );
 		initIsMetaComplete( ormEntity.isMetadataComplete() );
 		parseAttributes( ormEntity.getAttributes() );
 	}
@@ -87,6 +99,7 @@ public class XmlMetaEntity implements MetaEntity {
 		this.context = context;
 		this.importContext = new ImportContextImpl( getPackageName() );
 		this.element = element;
+		this.accessTypeInfo = context.getAccessTypeInfo( getQualifiedName() );
 		initIsMetaComplete( mappedSuperclass.isMetadataComplete() );
 		parseAttributes( mappedSuperclass.getAttributes() );
 	}
@@ -97,12 +110,21 @@ public class XmlMetaEntity implements MetaEntity {
 		this.context = context;
 		this.importContext = new ImportContextImpl( getPackageName() );
 		this.element = element;
+		this.accessTypeInfo = context.getAccessTypeInfo( getQualifiedName() );
 		initIsMetaComplete( embeddable.isMetadataComplete() );
 		parseEmbeddableAttributes( embeddable.getAttributes() );
 	}
 
-	private void initIsMetaComplete(boolean metadataComplete) {
-		isMetaComplete = context.isPersistenceUnitCompletelyXmlConfigured() || metadataComplete;
+	private void initIsMetaComplete(Boolean metadataComplete) {
+		if ( context.isPersistenceUnitCompletelyXmlConfigured() ) {
+			isMetaComplete = true;
+			return;
+		}
+		if ( Boolean.TRUE.equals( metadataComplete ) ) {
+			isMetaComplete = true;
+			return;
+		}
+		isMetaComplete = false;
 	}
 
 	public String getSimpleName() {
@@ -146,150 +168,272 @@ public class XmlMetaEntity implements MetaEntity {
 		return isMetaComplete;
 	}
 
-	private String[] getCollectionType(String propertyName, String explicitTargetEntity) {
+	private String[] getCollectionType(String propertyName, String explicitTargetEntity, ElementKind expectedElementKind) {
 		String types[] = new String[2];
 		for ( Element elem : element.getEnclosedElements() ) {
-			if ( elem.getSimpleName().toString().equals( propertyName ) ) {
-				DeclaredType type = ( ( DeclaredType ) elem.asType() );
-				List<? extends TypeMirror> typeArguments = type.getTypeArguments();
-
-				if ( typeArguments.size() == 0 && explicitTargetEntity == null ) {
-					throw new MetaModelGenerationException( "Unable to determine target entity type for " + clazzName + "." + propertyName + "." );
-				}
-
-				if ( explicitTargetEntity == null ) {
-					types[0] = TypeUtils.extractClosestRealTypeAsString( typeArguments.get( 0 ), context );
-				}
-				else {
-					types[0] = explicitTargetEntity;
-				}
-				types[1] = COLLECTIONS.get( type.asElement().toString() );
+			if ( expectedElementKind.equals( elem.getKind() ) ) {
+				continue;
 			}
+
+			if ( !elem.getSimpleName().toString().equals( propertyName ) ) {
+				continue;
+			}
+
+			DeclaredType type = ( ( DeclaredType ) elem.asType() );
+			List<? extends TypeMirror> typeArguments = type.getTypeArguments();
+
+			if ( typeArguments.size() == 0 && explicitTargetEntity == null ) {
+				throw new MetaModelGenerationException( "Unable to determine target entity type for " + clazzName + "." + propertyName + "." );
+			}
+
+			if ( explicitTargetEntity == null ) {
+				types[0] = TypeUtils.extractClosestRealTypeAsString( typeArguments.get( 0 ), context );
+			}
+			else {
+				types[0] = explicitTargetEntity;
+			}
+			types[1] = COLLECTIONS.get( type.asElement().toString() );
+			return types;
+
 		}
-		return types;
+		return null;
 	}
 
 	/**
-	 * Returns the entity type for relation.
+	 * Returns the entity type for a property.
 	 *
-	 * @param propertyName The property name of the association
-	 * @param explicitTargetEntity The explicitly specified target entity type
+	 * @param propertyName The property name
+	 * @param explicitTargetEntity The explicitly specified target entity type or {@code null}.
+	 * @param expectedElementKind Determines property vs field access type
 	 *
-	 * @return The entity type for relation/association.
+	 * @return The entity type for this property  or {@code null} if the property with the name and the matching access
+	 *         type does not exist.
 	 */
-	private String getType(String propertyName, String explicitTargetEntity) {
-		if ( explicitTargetEntity != null ) {
-			// TODO should there be a check of the target entity class and if it is loadable?
-			return explicitTargetEntity;
-		}
-
-		String typeName = null;
+	private String getType(String propertyName, String explicitTargetEntity, ElementKind expectedElementKind) {
 		for ( Element elem : element.getEnclosedElements() ) {
-			if ( elem.getSimpleName().toString().equals( propertyName ) ) {
-				switch ( elem.asType().getKind() ) {
-					case INT: {
-						typeName = "java.lang.Integer";
-						break;
-					}
-					case LONG: {
-						typeName = "java.lang.Long";
-						break;
-					}
-					case BOOLEAN: {
-						typeName = "java.lang.Boolean";
-						break;
-					}
-					case DECLARED: {
-						typeName = elem.asType().toString();
-						break;
-					}
-					case TYPEVAR: {
-						typeName = elem.asType().toString();
-						break;
-					}
+			if ( !expectedElementKind.equals( elem.getKind() ) ) {
+				continue;
+			}
+
+			TypeMirror mirror;
+			String name = elem.getSimpleName().toString();
+			if ( ElementKind.METHOD.equals( elem.getKind() ) ) {
+				name = StringUtil.getPropertyName( name );
+				mirror = ( ( ExecutableElement ) elem ).getReturnType();
+			} else {
+				mirror = elem.asType();
+			}
+
+			if ( name == null || !name.equals( propertyName ) ) {
+				continue;
+			}
+
+			if ( explicitTargetEntity != null ) {
+				// TODO should there be a check of the target entity class and if it is loadable?
+				return explicitTargetEntity;
+			}
+
+			switch ( mirror.getKind() ) {
+				case INT: {
+					return "java.lang.Integer";
 				}
-				break;
+				case LONG: {
+					return "java.lang.Long";
+				}
+				case BOOLEAN: {
+					return "java.lang.Boolean";
+				}
+				case DECLARED: {
+					return mirror.toString();
+				}
+				case TYPEVAR: {
+					return mirror.toString();
+				}
 			}
 		}
-		return typeName;
+
+		context.logMessage(
+				Diagnostic.Kind.WARNING,
+				"Unable to determine type for property " + propertyName + " of class " + getQualifiedName()
+						+ " using assess type " + accessTypeInfo.getDefaultAccessType()
+		);
+		return null;
 	}
 
 	@Override
 	public String toString() {
 		final StringBuilder sb = new StringBuilder();
 		sb.append( "XmlMetaEntity" );
-		sb.append( "{type=" ).append( element );
+		sb.append( "{accessTypeInfo=" ).append( accessTypeInfo );
+		sb.append( ", clazzName='" ).append( clazzName ).append( '\'' );
+		sb.append( ", members=" ).append( members );
+		sb.append( ", isMetaComplete=" ).append( isMetaComplete );
 		sb.append( '}' );
 		return sb.toString();
 	}
 
 	private void parseAttributes(Attributes attributes) {
 		XmlMetaSingleAttribute attribute;
-
 		if ( !attributes.getId().isEmpty() ) {
 			// TODO what do we do if there are more than one id nodes?
 			Id id = attributes.getId().get( 0 );
-			attribute = new XmlMetaSingleAttribute(
-					this, id.getName(), getType( id.getName(), null )
-			);
-			members.add( attribute );
+			ElementKind elementKind = getElementKind( id.getAccess() );
+			String type = getType( id.getName(), null, elementKind );
+			if ( type != null ) {
+				attribute = new XmlMetaSingleAttribute( this, id.getName(), type );
+				members.add( attribute );
+			}
 		}
 
 		for ( Basic basic : attributes.getBasic() ) {
-			attribute = new XmlMetaSingleAttribute( this, basic.getName(), getType( basic.getName(), null ) );
-			members.add( attribute );
+			ElementKind elementKind = getElementKind( basic.getAccess() );
+			String type = getType( basic.getName(), null, elementKind );
+			if ( type != null ) {
+				attribute = new XmlMetaSingleAttribute( this, basic.getName(), type );
+				members.add( attribute );
+			}
 		}
 
 		for ( ManyToOne manyToOne : attributes.getManyToOne() ) {
-			attribute = new XmlMetaSingleAttribute(
-					this, manyToOne.getName(), getType( manyToOne.getName(), manyToOne.getTargetEntity() )
-			);
-			members.add( attribute );
+			ElementKind elementKind = getElementKind( manyToOne.getAccess() );
+			String type = getType( manyToOne.getName(), manyToOne.getTargetEntity(), elementKind );
+			if ( type != null ) {
+				attribute = new XmlMetaSingleAttribute( this, manyToOne.getName(), type );
+				members.add( attribute );
+			}
 		}
 
 		for ( OneToOne oneToOne : attributes.getOneToOne() ) {
-			attribute = new XmlMetaSingleAttribute(
-					this, oneToOne.getName(), getType( oneToOne.getName(), oneToOne.getTargetEntity() )
-			);
-			members.add( attribute );
+			ElementKind elementKind = getElementKind( oneToOne.getAccess() );
+			String type = getType( oneToOne.getName(), oneToOne.getTargetEntity(), elementKind );
+			if ( type != null ) {
+				attribute = new XmlMetaSingleAttribute( this, oneToOne.getName(), type );
+				members.add( attribute );
+			}
 		}
 
 		XmlMetaCollection metaCollection;
 		String[] types;
 		for ( ManyToMany manyToMany : attributes.getManyToMany() ) {
+			ElementKind elementKind = getElementKind( manyToMany.getAccess() );
 			try {
-				types = getCollectionType( manyToMany.getName(), manyToMany.getTargetEntity() );
+				types = getCollectionType( manyToMany.getName(), manyToMany.getTargetEntity(), elementKind );
 			}
 			catch ( MetaModelGenerationException e ) {
 				logMetaModelException( manyToMany.getName(), e );
 				break;
 			}
-			metaCollection = new XmlMetaCollection( this, manyToMany.getName(), types[0], types[1] );
-			members.add( metaCollection );
+			if ( types != null ) {
+				metaCollection = new XmlMetaCollection( this, manyToMany.getName(), types[0], types[1] );
+				members.add( metaCollection );
+			}
 		}
 
 		for ( OneToMany oneToMany : attributes.getOneToMany() ) {
+			ElementKind elementKind = getElementKind( oneToMany.getAccess() );
 			try {
-				types = getCollectionType( oneToMany.getName(), oneToMany.getTargetEntity() );
+				types = getCollectionType( oneToMany.getName(), oneToMany.getTargetEntity(), elementKind );
 			}
 			catch ( MetaModelGenerationException e ) {
 				logMetaModelException( oneToMany.getName(), e );
 				break;
 			}
-			metaCollection = new XmlMetaCollection( this, oneToMany.getName(), types[0], types[1] );
-			members.add( metaCollection );
+			if ( types != null ) {
+				metaCollection = new XmlMetaCollection( this, oneToMany.getName(), types[0], types[1] );
+				members.add( metaCollection );
+			}
 		}
 
 		for ( ElementCollection collection : attributes.getElementCollection() ) {
+			ElementKind elementKind = getElementKind( collection.getAccess() );
 			try {
-				types = getCollectionType( collection.getName(), collection.getTargetClass() );
+				types = getCollectionType( collection.getName(), collection.getTargetClass(), elementKind );
 			}
 			catch ( MetaModelGenerationException e ) {
 				logMetaModelException( collection.getName(), e );
 				break;
 			}
-			metaCollection = new XmlMetaCollection( this, collection.getName(), types[0], types[1] );
-			members.add( metaCollection );
+			if ( types != null ) {
+				metaCollection = new XmlMetaCollection( this, collection.getName(), types[0], types[1] );
+				members.add( metaCollection );
+			}
+		}
+	}
+
+	private void parseEmbeddableAttributes(EmbeddableAttributes attributes) {
+		XmlMetaSingleAttribute attribute;
+		for ( Basic basic : attributes.getBasic() ) {
+			ElementKind elementKind = getElementKind( basic.getAccess() );
+			String type = getType( basic.getName(), null, elementKind );
+			if ( type != null ) {
+				attribute = new XmlMetaSingleAttribute( this, basic.getName(), type );
+				members.add( attribute );
+			}
+		}
+
+		for ( ManyToOne manyToOne : attributes.getManyToOne() ) {
+			ElementKind elementKind = getElementKind( manyToOne.getAccess() );
+			String type = getType( manyToOne.getName(), manyToOne.getTargetEntity(), elementKind );
+			if ( type != null ) {
+				attribute = new XmlMetaSingleAttribute( this, manyToOne.getName(), type );
+				members.add( attribute );
+			}
+		}
+
+		for ( OneToOne oneToOne : attributes.getOneToOne() ) {
+			ElementKind elementKind = getElementKind( oneToOne.getAccess() );
+			String type = getType( oneToOne.getName(), oneToOne.getTargetEntity(), elementKind );
+			if ( type != null ) {
+				attribute = new XmlMetaSingleAttribute( this, oneToOne.getName(), type );
+				members.add( attribute );
+			}
+		}
+
+		XmlMetaCollection metaCollection;
+		String[] types;
+		for ( ManyToMany manyToMany : attributes.getManyToMany() ) {
+			ElementKind elementKind = getElementKind( manyToMany.getAccess() );
+			try {
+				types = getCollectionType( manyToMany.getName(), manyToMany.getTargetEntity(), elementKind );
+			}
+			catch ( MetaModelGenerationException e ) {
+				logMetaModelException( manyToMany.getName(), e );
+				break;
+			}
+			if ( types != null ) {
+				metaCollection = new XmlMetaCollection( this, manyToMany.getName(), types[0], types[1] );
+				members.add( metaCollection );
+			}
+		}
+
+		for ( OneToMany oneToMany : attributes.getOneToMany() ) {
+			ElementKind elementKind = getElementKind( oneToMany.getAccess() );
+			try {
+				types = getCollectionType( oneToMany.getName(), oneToMany.getTargetEntity(), elementKind );
+			}
+			catch ( MetaModelGenerationException e ) {
+				logMetaModelException( oneToMany.getName(), e );
+				break;
+			}
+			if ( types != null ) {
+				metaCollection = new XmlMetaCollection( this, oneToMany.getName(), types[0], types[1] );
+				members.add( metaCollection );
+			}
+		}
+
+		for ( ElementCollection collection : attributes.getElementCollection() ) {
+			ElementKind elementKind = getElementKind( collection.getAccess() );
+			try {
+				types = getCollectionType( collection.getName(), collection.getTargetClass(), elementKind );
+			}
+			catch ( MetaModelGenerationException e ) {
+				logMetaModelException( collection.getName(), e );
+				break;
+			}
+			if ( types != null ) {
+				metaCollection = new XmlMetaCollection( this, collection.getName(), types[0], types[1] );
+				members.add( metaCollection );
+			}
 		}
 	}
 
@@ -307,44 +451,17 @@ public class XmlMetaEntity implements MetaEntity {
 		);
 	}
 
-	private void parseEmbeddableAttributes(EmbeddableAttributes attributes) {
-		XmlMetaSingleAttribute attribute;
-		for ( Basic basic : attributes.getBasic() ) {
-			attribute = new XmlMetaSingleAttribute( this, basic.getName(), getType( basic.getName(), null ) );
-			members.add( attribute );
+	private ElementKind getElementKind(org.hibernate.jpamodelgen.xml.jaxb.AccessType accessType) {
+		// if no explicit access type was specified in xml we use the entity access type
+		if ( accessType == null ) {
+			return TypeUtils.getElementKindForAccessType( accessTypeInfo.getDefaultAccessType() );
 		}
 
-		for ( ManyToOne manyToOne : attributes.getManyToOne() ) {
-			attribute = new XmlMetaSingleAttribute(
-					this, manyToOne.getName(), getType( manyToOne.getName(), manyToOne.getTargetEntity() )
-			);
-			members.add( attribute );
+		if ( org.hibernate.jpamodelgen.xml.jaxb.AccessType.FIELD.equals( accessType ) ) {
+			return ElementKind.FIELD;
 		}
-
-		for ( OneToOne oneToOne : attributes.getOneToOne() ) {
-			attribute = new XmlMetaSingleAttribute(
-					this, oneToOne.getName(), getType( oneToOne.getName(), oneToOne.getTargetEntity() )
-			);
-			members.add( attribute );
-		}
-
-		XmlMetaCollection metaCollection;
-		for ( ManyToMany manyToMany : attributes.getManyToMany() ) {
-			String[] types = getCollectionType( manyToMany.getName(), manyToMany.getTargetEntity() );
-			metaCollection = new XmlMetaCollection( this, manyToMany.getName(), types[0], types[1] );
-			members.add( metaCollection );
-		}
-
-		for ( OneToMany oneToMany : attributes.getOneToMany() ) {
-			String[] types = getCollectionType( oneToMany.getName(), oneToMany.getTargetEntity() );
-			metaCollection = new XmlMetaCollection( this, oneToMany.getName(), types[0], types[1] );
-			members.add( metaCollection );
-		}
-
-		for ( ElementCollection collection : attributes.getElementCollection() ) {
-			String[] types = getCollectionType( collection.getName(), collection.getTargetClass() );
-			metaCollection = new XmlMetaCollection( this, collection.getName(), types[0], types[1] );
-			members.add( metaCollection );
+		else {
+			return ElementKind.METHOD;
 		}
 	}
 }

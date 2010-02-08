@@ -17,9 +17,6 @@
 */
 package org.hibernate.jpamodelgen.test.elementcollection;
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.testng.annotations.Test;
 
 import org.hibernate.jpamodelgen.test.util.CompilationTest;
@@ -59,12 +56,7 @@ public class ElementCollectionTest extends CompilationTest {
 	}
 
 	@Override
-	protected String getTestPackage() {
+	protected String getPackageNameOfTestSources() {
 		return ElementCollectionTest.class.getPackage().getName();
 	}
-
-	@Override
-	protected Map<String, String> getProcessorOptions() {
-		return Collections.emptyMap();
-	}	
 }

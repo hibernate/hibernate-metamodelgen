@@ -71,4 +71,14 @@ public abstract class AnnotationMetaAttribute implements MetaAttribute {
 	public String getTypeDeclaration() {
 		return type;
 	}
+
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder();
+		sb.append( "AnnotationMetaAttribute" );
+		sb.append( "{element=" ).append( element );
+		sb.append( ", type='" ).append( type ).append( '\'' );
+		sb.append( '}' );
+		return sb.toString();
+	}
 }

@@ -110,7 +110,7 @@ public class ImportContextImpl implements ImportContext {
 
 
 		if ( inSamePackage( fqcn ) || ( imports.contains( pureFqcn ) && canBeSimple ) ) {
-			result = unqualify( result ); // dequalify
+			result = unqualify( result ); // de-qualify
 		}
 		else if ( inJavaLang( fqcn ) ) {
 			result = result.substring( "java.lang.".length() );

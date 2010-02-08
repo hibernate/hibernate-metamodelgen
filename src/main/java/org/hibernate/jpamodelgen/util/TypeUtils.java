@@ -25,6 +25,7 @@ import java.util.Map;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
@@ -32,7 +33,15 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.Types;
+import javax.persistence.Access;
+import javax.persistence.AccessType;
+import javax.persistence.EmbeddedId;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.MappedSuperclass;
+import javax.tools.Diagnostic;
 
+import org.hibernate.jpamodelgen.AccessTypeInformation;
 import org.hibernate.jpamodelgen.Context;
 
 /**
@@ -44,6 +53,7 @@ import org.hibernate.jpamodelgen.Context;
  */
 public class TypeUtils {
 
+	public static final String DEFAULT_ANNOTATION_PARAMETER_NAME = "value";
 	private static final Map<String, String> PRIMITIVES = new HashMap<String, String>();
 
 	static {
@@ -180,5 +190,136 @@ public class TypeUtils {
 			}
 		}
 		return returnValue;
+	}
+
+	public static void determineAccessTypeForHierarchy(TypeElement searchedElement, Context context) {
+		String fqcn = searchedElement.getQualifiedName().toString();
+		context.logMessage( Diagnostic.Kind.OTHER, "check class " + fqcn );
+		AccessTypeInformation accessTypeInfo = context.getAccessTypeInfo( fqcn );
+
+		if ( accessTypeInfo != null && accessTypeInfo.isAccessTypeResolved() ) {
+			context.logMessage(
+					Diagnostic.Kind.OTHER,
+					"AccessType for " + searchedElement.toString() + "found in cache: " + accessTypeInfo
+			);
+			return;
+		}
+
+		// check for explicit access type
+		AccessType forcedAccessType = determineAnnotationSpecifiedAccessType( searchedElement );
+		if ( forcedAccessType != null ) {
+			context.logMessage(
+					Diagnostic.Kind.OTHER, "Explicit access type on " + searchedElement + ":" + forcedAccessType
+			);
+			accessTypeInfo = new AccessTypeInformation( fqcn, forcedAccessType, null );
+			context.addAccessTypeInformation( fqcn, accessTypeInfo );
+			return;
+		}
+
+		// need to find the default access type for this class
+		// let's check first if this entity is the root of the class hierarchy and defines an id. If so the
+		// placement of the id annotation determines the access type
+		AccessType defaultAccessType = getAccessTypeInCaseElementIsRoot( searchedElement, context );
+		if ( defaultAccessType != null ) {
+			accessTypeInfo = new AccessTypeInformation( fqcn, null, defaultAccessType );
+			context.addAccessTypeInformation( fqcn, accessTypeInfo );
+			return;
+		}
+
+		// if we end up here we need to recursively look for superclasses
+		defaultAccessType = getDefaultAccessForHierarchy( searchedElement, context );
+		if ( defaultAccessType == null ) {
+			defaultAccessType = AccessType.PROPERTY;
+		}
+		accessTypeInfo = new AccessTypeInformation( fqcn, null, defaultAccessType );
+		context.addAccessTypeInformation( fqcn, accessTypeInfo );
+	}
+
+	private static AccessType getDefaultAccessForHierarchy(TypeElement element, Context context) {
+		AccessType defaultAccessType = null;
+		TypeElement superClass = element;
+		do {
+			superClass = TypeUtils.getSuperclassTypeElement( superClass );
+			if ( superClass != null ) {
+				String fqcn = superClass.getQualifiedName().toString();
+				AccessTypeInformation accessTypeInfo = context.getAccessTypeInfo( fqcn );
+				if ( accessTypeInfo != null && accessTypeInfo.getDefaultAccessType() != null ) {
+					return accessTypeInfo.getDefaultAccessType();
+				}
+				if ( TypeUtils.containsAnnotation( superClass, Entity.class, MappedSuperclass.class ) ) {
+					defaultAccessType = getAccessTypeInCaseElementIsRoot( superClass, context );
+					if ( defaultAccessType != null ) {
+						accessTypeInfo = new AccessTypeInformation( fqcn, null, defaultAccessType );
+						context.addAccessTypeInformation( fqcn, accessTypeInfo );
+						defaultAccessType = accessTypeInfo.getAccessType();
+					}
+					else {
+						defaultAccessType = getDefaultAccessForHierarchy( superClass, context );
+					}
+				}
+			}
+		}
+		while ( superClass != null );
+		return defaultAccessType;
+	}
+
+	private static AccessType getAccessTypeInCaseElementIsRoot(TypeElement searchedElement, Context context) {
+		AccessType defaultAccessType = null;
+		List<? extends Element> myMembers = searchedElement.getEnclosedElements();
+		for ( Element subElement : myMembers ) {
+			List<? extends AnnotationMirror> entityAnnotations =
+					context.getProcessingEnvironment().getElementUtils().getAllAnnotationMirrors( subElement );
+			for ( Object entityAnnotation : entityAnnotations ) {
+				AnnotationMirror annotationMirror = ( AnnotationMirror ) entityAnnotation;
+				if ( isIdAnnotation( annotationMirror ) ) {
+					defaultAccessType = getAccessTypeOfIdAnnotation( subElement );
+					break;
+				}
+			}
+		}
+		return defaultAccessType;
+	}
+
+	private static AccessType getAccessTypeOfIdAnnotation(Element element) {
+		AccessType accessType = null;
+		final ElementKind kind = element.getKind();
+		if ( kind == ElementKind.FIELD || kind == ElementKind.METHOD ) {
+			accessType = kind == ElementKind.FIELD ? AccessType.FIELD : AccessType.PROPERTY;
+		}
+		return accessType;
+	}
+
+	private static boolean isIdAnnotation(AnnotationMirror annotationMirror) {
+		return TypeUtils.isAnnotationMirrorOfType( annotationMirror, Id.class )
+				|| TypeUtils.isAnnotationMirrorOfType( annotationMirror, EmbeddedId.class );
+	}
+
+	public static AccessType determineAnnotationSpecifiedAccessType(Element element) {
+		final AnnotationMirror accessAnnotationMirror = TypeUtils.getAnnotationMirror( element, Access.class );
+		AccessType forcedAccessType = null;
+		if ( accessAnnotationMirror != null ) {
+			Element accessElement = ( Element ) TypeUtils.getAnnotationValue(
+					accessAnnotationMirror,
+					DEFAULT_ANNOTATION_PARAMETER_NAME
+			);
+			if ( accessElement.getKind().equals( ElementKind.ENUM_CONSTANT ) ) {
+				if ( accessElement.getSimpleName().toString().equals( AccessType.PROPERTY.toString() ) ) {
+					forcedAccessType = AccessType.PROPERTY;
+				}
+				else if ( accessElement.getSimpleName().toString().equals( AccessType.FIELD.toString() ) ) {
+					forcedAccessType = AccessType.FIELD;
+				}
+			}
+		}
+		return forcedAccessType;
+	}
+
+	public static ElementKind getElementKindForAccessType(AccessType accessType) {
+		if ( AccessType.FIELD.equals( accessType ) ) {
+			return ElementKind.FIELD;
+		}
+		else {
+			return ElementKind.METHOD;
+		}
 	}
 }

@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.tools.Diagnostic;
@@ -33,6 +35,8 @@ import javax.tools.ToolProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
+
+import org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor;
 
 import static org.testng.FileAssert.fail;
 
@@ -85,6 +89,7 @@ public abstract class CompilationTest {
 		compilationUnits = fileManager.getJavaFileObjectsFromFiles(
 				getCompilationUnits( outBaseDir )
 		);
+		options.add( "-proc:none" ); // for the second compile skip the processor
 		compileSources( options, compiler, diagnostics, fileManager, compilationUnits );
 		fileManager.close();
 	}
@@ -104,6 +109,20 @@ public abstract class CompilationTest {
 		options.add( "-d" );
 		options.add( outBaseDir );
 
+		// pass orm files if specified
+		if ( !getOrmFiles().isEmpty() ) {
+			StringBuilder builder = new StringBuilder();
+			builder.append( ANNOTATION_PROCESSOR_OPTION_PREFIX );
+			builder.append( JPAMetaModelEntityProcessor.ORM_XML_OPTION );
+			builder.append( "=" );
+			for ( String ormFile : getOrmFiles() ) {
+				builder.append( ormFile );
+				builder.append( "," );
+			}
+			builder.deleteCharAt( builder.length() - 1 );
+			options.add( builder.toString() );
+		}
+
 		// add any additional options specified by the test
 		for ( Map.Entry<String, String> entry : getProcessorOptions().entrySet() ) {
 			StringBuilder builder = new StringBuilder();
@@ -113,12 +132,13 @@ public abstract class CompilationTest {
 			builder.append( entry.getValue() );
 			options.add( builder.toString() );
 		}
+		options.add( "-Adebug=true" );
 		return options;
 	}
 
 	private List<File> getCompilationUnits(String baseDir) {
 		List<File> javaFiles = new ArrayList<File>();
-		String packageDirName = baseDir + PATH_SEPARATOR + getTestPackage().replace( ".", PATH_SEPARATOR );
+		String packageDirName = baseDir + PATH_SEPARATOR + getPackageNameOfTestSources().replace( ".", PATH_SEPARATOR );
 		File packageDir = new File( packageDirName );
 		FilenameFilter javaFileFilter = new FilenameFilter() {
 			@Override
@@ -134,9 +154,15 @@ public abstract class CompilationTest {
 		return javaFiles;
 	}
 
-	abstract protected String getTestPackage();
+	abstract protected String getPackageNameOfTestSources();
 
-	abstract protected Map<String, String> getProcessorOptions();
+	protected Map<String, String> getProcessorOptions() {
+		return Collections.emptyMap();
+	}
+
+	protected Collection<String> getOrmFiles() {
+		return Collections.emptyList();
+	}
 }
 
 

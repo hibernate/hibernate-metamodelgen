@@ -1,4 +1,4 @@
-// $Id: RawTypesTest.java 18664 2010-01-28 16:56:51Z hardy.ferentschik $
+// $Id$
 /*
 * JBoss, Home of Professional Open Source
 * Copyright 2008, Red Hat Middleware LLC, and individual contributors
@@ -15,27 +15,43 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.hibernate.jpamodelgen.test.rawtypes;
+package org.hibernate.jpamodelgen.test.xmlmapped;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.testng.annotations.Test;
 
 import org.hibernate.jpamodelgen.test.util.CompilationTest;
+import org.hibernate.jpamodelgen.test.util.TestUtil;
 
 import static org.hibernate.jpamodelgen.test.util.TestUtil.assertMetamodelClassGeneratedFor;
 
 /**
- * @author Emmanuel Bernard
+ * @author Hardy Ferentschik
  */
-public class RawTypesTest extends CompilationTest {
-
+public class IgnoreInvalidXmlTest extends CompilationTest {
 	@Test
-	public void testGenerics() {
-		assertMetamodelClassGeneratedFor( DeskWithRawType.class );
-		assertMetamodelClassGeneratedFor( EmployeeWithRawType.class );
+	public void testInvalidXmlFilesGetIgnored() {
+		// this is only a indirect test, but if the invalid xml files would cause the processor to abort the
+		// meta class would not have been generated
+		assertMetamodelClassGeneratedFor( Superhero.class );
 	}
 
 	@Override
 	protected String getPackageNameOfTestSources() {
-		return DeskWithRawType.class.getPackage().getName();
+		return IgnoreInvalidXmlTest.class.getPackage().getName();
+	}
+
+	@Override
+	protected Collection<String> getOrmFiles() {
+		List<String> ormFiles = new ArrayList<String>();
+		String packageName = TestUtil.fcnToPath( IgnoreInvalidXmlTest.class.getPackage().getName() );
+		ormFiles.add( packageName + "/orm.xml" );
+		ormFiles.add( packageName + "/jpa1-orm.xml" );
+		ormFiles.add( packageName + "/malformed-mapping.xml" );
+		ormFiles.add( packageName + "/non-existend-class.xml" );
+		return ormFiles;
 	}
 }

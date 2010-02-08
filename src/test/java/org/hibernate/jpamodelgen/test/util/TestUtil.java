@@ -114,7 +114,7 @@ public class TestUtil {
 
 	public static void assertAttributeTypeInMetaModelFor(Class<?> clazz, String fieldName, Class<?> expectedType, String errorString) {
 		Field field = getFieldFromMetamodelFor( clazz, fieldName );
-		assertNotNull( field );
+		assertNotNull( field, "Field " + fieldName + " should exist." );
 		ParameterizedType type = ( ParameterizedType ) field.getGenericType();
 		Type actualType = type.getActualTypeArguments()[1];
 		if ( expectedType.isArray() ) {

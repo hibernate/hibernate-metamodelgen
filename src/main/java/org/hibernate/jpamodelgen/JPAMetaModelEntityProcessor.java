@@ -94,6 +94,14 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
 		}
 
+		if ( context.isPersistenceUnitCompletelyXmlConfigured() ) {
+			context.logMessage(
+					Diagnostic.Kind.OTHER,
+					"Skipping the processing of annotations since persistence unit is purely xml configured."
+			);
+			return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
+		}
+
 		Set<? extends Element> elements = roundEnvironment.getRootElements();
 		for ( Element element : elements ) {
 			context.logMessage( Diagnostic.Kind.OTHER, "Processing " + element.toString() );
@@ -104,14 +112,9 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 	}
 
 	private void createMetaModelClasses() {
-		for ( MetaEntity entity : context.getMetaEntities()) {
+		for ( MetaEntity entity : context.getMetaEntities() ) {
 			context.logMessage( Diagnostic.Kind.OTHER, "Writing meta model for " + entity );
 			ClassWriter.writeFile( entity, context );
-		}
-
-		//process left over, in most cases is empty
-		for ( String className : context.getElementsAlreadyProcessed() ) {
-			context.removeMetaSuperclassOrEmbeddable( className );
 		}
 
 		for ( MetaEntity entity : context.getMetaSuperclassOrEmbeddable() ) {
@@ -159,7 +162,6 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		}
 		else if ( TypeUtils.isAnnotationMirrorOfType( mirror, MappedSuperclass.class )
 				|| TypeUtils.isAnnotationMirrorOfType( mirror, Embeddable.class ) ) {
-
 			context.addMetaSuperclassOrEmbeddable( metaEntity.getQualifiedName(), metaEntity );
 		}
 	}

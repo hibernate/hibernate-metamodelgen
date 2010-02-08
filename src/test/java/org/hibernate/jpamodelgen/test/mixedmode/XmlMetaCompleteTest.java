@@ -17,12 +17,12 @@
 */
 package org.hibernate.jpamodelgen.test.mixedmode;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.testng.annotations.Test;
 
-import org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor;
 import org.hibernate.jpamodelgen.test.util.CompilationTest;
 import org.hibernate.jpamodelgen.test.util.TestUtil;
 
@@ -32,7 +32,7 @@ import static org.hibernate.jpamodelgen.test.util.TestUtil.assertMetamodelClassG
 /**
  * @author Hardy Ferentschik
  */
-public class MixedModeMappingTest extends CompilationTest {
+public class XmlMetaCompleteTest extends CompilationTest {
 	@Test
 	public void testXmlConfiguredEmbeddedClassGenerated() {
 		assertMetamodelClassGeneratedFor( Person.class );
@@ -40,17 +40,14 @@ public class MixedModeMappingTest extends CompilationTest {
 	}
 
 	@Override
-	protected String getTestPackage() {
-		return MixedModeMappingTest.class.getPackage().getName();
+	protected String getPackageNameOfTestSources() {
+		return XmlMetaCompleteTest.class.getPackage().getName();
 	}
 
 	@Override
-	protected Map<String, String> getProcessorOptions() {
-		Map<String, String> properties = new HashMap<String, String>();
-		properties.put(
-				JPAMetaModelEntityProcessor.ORM_XML_OPTION,
-				TestUtil.fcnToPath( MixedModeMappingTest.class.getPackage().getName() ) + "/orm.xml"
-		);
-		return properties;
+	protected Collection<String> getOrmFiles() {
+		List<String> ormFiles = new ArrayList<String>();
+		ormFiles.add( TestUtil.fcnToPath( XmlMetaCompleteTest.class.getPackage().getName() ) + "/orm.xml" );
+		return ormFiles;
 	}
 }
