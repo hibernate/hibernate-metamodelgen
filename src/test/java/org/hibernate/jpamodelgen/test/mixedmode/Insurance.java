@@ -17,55 +17,31 @@
 */
 package org.hibernate.jpamodelgen.test.mixedmode;
 
-import javax.persistence.Entity;
-
+import javax.persistence.Embeddable;
 
 /**
  * @author Hardy Ferentschik
  */
-@Entity
-public class RentalCar extends Car {
-	private RentalCompany company;
+@Embeddable
+public class Insurance {
+	String number;
+	String policyNumber;
 
-	private CURRENTLY_HIRED hired;
-
-	private Character[] chassisNumber;
-
-	private Insurance insurance;
-
-	public RentalCompany getCompany() {
-		return company;
+	public String getPolicyNumber() {
+		return policyNumber;
 	}
 
-	public void setCompany(RentalCompany company) {
-		this.company = company;
+	public void setPolicyNumber(String policyNumber) {
+		this.policyNumber = policyNumber;
 	}
 
-	public Character[] getChassisNumber() {
-		return chassisNumber;
+	public String getNumber() {
+		return number;
 	}
 
-	public void setChassisNumber(Character[] chassisNumber) {
-		this.chassisNumber = chassisNumber;
-	}
-
-	public CURRENTLY_HIRED getHired() {
-		return hired;
-	}
-
-	public void setHired(CURRENTLY_HIRED hired) {
-		this.hired = hired;
-	}
-
-	public Insurance getInsurance() {
-		return insurance;
-	}
-
-	public void setInsurance(Insurance insurance) {
-		this.insurance = insurance;
-	}
-
-	enum CURRENTLY_HIRED {
-		YES, NO
+	public void setNumber(String number) {
+		this.number = number;
 	}
 }
+
+

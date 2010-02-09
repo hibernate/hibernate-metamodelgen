@@ -57,6 +57,9 @@ public class MixedConfigurationTest extends CompilationTest {
 		assertPresenceOfFieldInMetamodelFor(
 				RentalCar.class, "company", "Property 'company' should be included due to xml configuration"
 		);
+		assertPresenceOfFieldInMetamodelFor(
+				RentalCar.class, "insurance", "Property 'insurance' should be included since it is an embeddable"
+		);
 	}
 
 	@Override

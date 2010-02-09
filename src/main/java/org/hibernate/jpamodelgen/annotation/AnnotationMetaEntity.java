@@ -41,6 +41,7 @@ import javax.lang.model.util.SimpleTypeVisitor6;
 import javax.persistence.AccessType;
 import javax.persistence.Basic;
 import javax.persistence.ElementCollection;
+import javax.persistence.Embeddable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapKeyClass;
@@ -474,6 +475,9 @@ public class AnnotationMetaEntity implements MetaEntity {
 				TypeElement typeElement = ( ( TypeElement ) element );
 				String typeName = typeElement.getQualifiedName().toString();
 				if ( BASIC_TYPES.contains( typeName ) ) {
+					return Boolean.TRUE;
+				}
+				if ( TypeUtils.containsAnnotation( element, Embeddable.class ) ) {
 					return Boolean.TRUE;
 				}
 				for ( TypeMirror mirror : typeElement.getInterfaces() ) {
