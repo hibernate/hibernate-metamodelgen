@@ -18,6 +18,7 @@
 package org.hibernate.jpamodelgen.xml;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -162,7 +163,7 @@ public class XmlMetaEntity implements MetaEntity {
 	public TypeElement getTypeElement() {
 		return element;
 	}
-
+	
 	@Override
 	public boolean isMetaComplete() {
 		return isMetaComplete;

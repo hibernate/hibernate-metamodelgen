@@ -46,7 +46,16 @@ public class MixedConfigurationTest extends CompilationTest {
 		assertMetamodelClassGeneratedFor( Vehicle.class );
 		assertMetamodelClassGeneratedFor( Truck.class );
 		assertPresenceOfFieldInMetamodelFor(
-				Truck.class, "horsePower", "Property horsePower has explicit access type and should be in metamodel"
+				Truck.class, "horsePower", "Property 'horsePower' has explicit access type and should be in metamodel"
+		);
+	}
+
+	@Test
+	public void testMixedConfiguration() {
+		assertMetamodelClassGeneratedFor( RentalCar.class );
+		assertMetamodelClassGeneratedFor( RentalCompany.class );
+		assertPresenceOfFieldInMetamodelFor(
+				RentalCar.class, "company", "Property 'company' should be included due to xml configuration"
 		);
 	}
 
@@ -58,8 +67,10 @@ public class MixedConfigurationTest extends CompilationTest {
 	@Override
 	protected Collection<String> getOrmFiles() {
 		List<String> ormFiles = new ArrayList<String>();
-		ormFiles.add( TestUtil.fcnToPath( MixedConfigurationTest.class.getPackage().getName() ) + "/car.xml" );
-		ormFiles.add( TestUtil.fcnToPath( MixedConfigurationTest.class.getPackage().getName() ) + "/truck.xml" );
+		String dir = TestUtil.fcnToPath( MixedConfigurationTest.class.getPackage().getName() );
+		ormFiles.add( dir + "/car.xml" );
+		ormFiles.add( dir + "/rentalcar.xml" );
+		ormFiles.add( dir + "/truck.xml" );
 		return ormFiles;
 	}
 }

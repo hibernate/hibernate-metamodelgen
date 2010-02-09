@@ -17,6 +17,7 @@
 */
 package org.hibernate.jpamodelgen;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -104,8 +105,10 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 		Set<? extends Element> elements = roundEnvironment.getRootElements();
 		for ( Element element : elements ) {
-			context.logMessage( Diagnostic.Kind.OTHER, "Processing " + element.toString() );
-			handleRootElementAnnotationMirrors( element );
+			if ( TypeUtils.containsAnnotation( element, Entity.class, MappedSuperclass.class, Embeddable.class ) ) {
+				context.logMessage( Diagnostic.Kind.OTHER, "Processing " + element.toString() );
+				handleRootElementAnnotationMirrors( element );
+			}
 		}
 
 		return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
@@ -123,7 +126,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		}
 	}
 
-	private boolean hostJPAAnnotations(Set<? extends TypeElement> annotations) {
+	private boolean hostJPAAnnotations(Collection<? extends TypeElement> annotations) {
 		for ( TypeElement type : annotations ) {
 			if ( TypeUtils.isTypeElementOfType( type, Entity.class ) ) {
 				return true;
@@ -151,6 +154,9 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 				}
 
 				AnnotationMetaEntity metaEntity = new AnnotationMetaEntity( ( TypeElement ) element, context );
+				if ( alreadyExistingMetaEntity != null ) {
+					metaEntity.mergeInMembers( alreadyExistingMetaEntity.getMembers() );
+				}
 				addMetaEntityToContext( mirror, metaEntity );
 			}
 		}
