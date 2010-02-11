@@ -65,7 +65,7 @@ public class XmlParser {
 		this.entityMappings = new ArrayList<EntityMappings>();
 	}
 
-	public void parsePersistenceXml() {
+	public void parseXml() {
 		collectAllEntityMappings();
 		determineDefaultAccessTypeAndMetaCompleteness();
 		determineXmlAccessTypes();
@@ -153,11 +153,7 @@ public class XmlParser {
 				continue;
 			}
 
-			XmlMetaEntity metaEntity = new XmlMetaEntity(
-					embeddable, pkg, getXmlMappedType( fqcn ),
-					context
-			);
-
+			XmlMetaEntity metaEntity = new XmlMetaEmbeddable( embeddable, pkg, getXmlMappedType( fqcn ), context );
 			if ( context.containsMetaSuperclassOrEmbeddable( fqcn ) ) {
 				context.logMessage(
 						Diagnostic.Kind.WARNING,
@@ -184,9 +180,8 @@ public class XmlParser {
 				continue;
 			}
 
-			XmlMetaEntity metaEntity = new XmlMetaEntity(
-					mappedSuperClass, pkg, getXmlMappedType( fqcn ),
-					context
+			XmlMetaEntity metaEntity = new XmlMetaMappedSuperClass(
+					mappedSuperClass, pkg, getXmlMappedType( fqcn ), context
 			);
 
 			if ( context.containsMetaSuperclassOrEmbeddable( fqcn ) ) {
@@ -297,12 +292,12 @@ public class XmlParser {
 	}
 
 	private boolean xmlMappedTypeExists(String fullyQualifiedClassName) {
-		Elements utils = context.getProcessingEnvironment().getElementUtils();
+		Elements utils = context.getElementUtils();
 		return utils.getTypeElement( fullyQualifiedClassName ) != null;
 	}
 
 	private TypeElement getXmlMappedType(String fullyQualifiedClassName) {
-		Elements utils = context.getProcessingEnvironment().getElementUtils();
+		Elements utils = context.getElementUtils();
 		return utils.getTypeElement( fullyQualifiedClassName );
 	}
 

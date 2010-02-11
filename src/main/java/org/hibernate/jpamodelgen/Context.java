@@ -26,6 +26,7 @@ import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 import javax.persistence.AccessType;
 import javax.tools.Diagnostic;
 
@@ -85,6 +86,14 @@ public class Context {
 
 	public ProcessingEnvironment getProcessingEnvironment() {
 		return pe;
+	}
+
+	public Elements getElementUtils() {
+		return pe.getElementUtils();
+	}
+
+	public Types getTypeUtils() {
+		return pe.getTypeUtils();
 	}
 
 	public String getPersistenceXmlLocation() {

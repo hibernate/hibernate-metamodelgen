@@ -36,7 +36,6 @@ import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
-import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleTypeVisitor6;
 import javax.persistence.AccessType;
 import javax.persistence.Basic;
@@ -53,10 +52,10 @@ import javax.tools.Diagnostic;
 import org.hibernate.jpamodelgen.AccessTypeInformation;
 import org.hibernate.jpamodelgen.Context;
 import org.hibernate.jpamodelgen.ImportContextImpl;
-import org.hibernate.jpamodelgen.MetaModelGenerationException;
 import org.hibernate.jpamodelgen.model.ImportContext;
 import org.hibernate.jpamodelgen.model.MetaAttribute;
 import org.hibernate.jpamodelgen.model.MetaEntity;
+import org.hibernate.jpamodelgen.util.Constants;
 import org.hibernate.jpamodelgen.util.StringUtil;
 import org.hibernate.jpamodelgen.util.TypeUtils;
 
@@ -67,54 +66,25 @@ import org.hibernate.jpamodelgen.util.TypeUtils;
  */
 public class AnnotationMetaEntity implements MetaEntity {
 
-	static Map<String, String> COLLECTIONS = new HashMap<String, String>();
+	protected final ImportContext importContext;
+	protected final TypeElement element;
+	protected final Map<String, MetaAttribute> members;
+	protected Context context;
 
-	static {
-		COLLECTIONS.put( "java.util.Collection", "javax.persistence.metamodel.CollectionAttribute" );
-		COLLECTIONS.put( "java.util.Set", "javax.persistence.metamodel.SetAttribute" );
-		COLLECTIONS.put( "java.util.List", "javax.persistence.metamodel.ListAttribute" );
-		COLLECTIONS.put( "java.util.Map", "javax.persistence.metamodel.MapAttribute" );
-	}
-
-	static List<String> BASIC_TYPES = new ArrayList<String>();
-
-	static {
-		BASIC_TYPES.add( "java.lang.String" );
-		BASIC_TYPES.add( "java.lang.Boolean" );
-		BASIC_TYPES.add( "java.lang.Byte" );
-		BASIC_TYPES.add( "java.lang.Character" );
-		BASIC_TYPES.add( "java.lang.Short" );
-		BASIC_TYPES.add( "java.lang.Integer" );
-		BASIC_TYPES.add( "java.lang.Long" );
-		BASIC_TYPES.add( "java.lang.Float" );
-		BASIC_TYPES.add( "java.lang.Double" );
-		BASIC_TYPES.add( "java.math.BigInteger" );
-		BASIC_TYPES.add( "java.math.BigDecimal" );
-		BASIC_TYPES.add( "java.util.Date" );
-		BASIC_TYPES.add( "java.util.Calendar" );
-		BASIC_TYPES.add( "java.sql.Date" );
-		BASIC_TYPES.add( "java.sql.Time" );
-		BASIC_TYPES.add( "java.sql.Timestamp" );
-	}
-
-	static List<String> BASIC_ARRAY_TYPES = new ArrayList<String>();
-
-	static {
-		BASIC_ARRAY_TYPES.add( "java.lang.Character" );
-		BASIC_ARRAY_TYPES.add( "java.lang.Byte" );
-	}
-
-	private final TypeElement element;
-	private final ImportContext importContext;
-	private Context context;
-	private Map<String, MetaAttribute> members;
 	private AccessTypeInformation entityAccessTypeInfo;
 
 	public AnnotationMetaEntity(TypeElement element, Context context) {
+		this( element, context, false );
+	}
+
+	protected AnnotationMetaEntity(TypeElement element, Context context, boolean lazilyInitialised) {
 		this.element = element;
 		this.context = context;
-		importContext = new ImportContextImpl( getPackageName() );
-		init();
+		this.members = new HashMap<String, MetaAttribute>();
+		this.importContext = new ImportContextImpl( getPackageName() );
+		if ( !lazilyInitialised ) {
+			init();
+		}
 	}
 
 	public Context getContext() {
@@ -130,8 +100,8 @@ public class AnnotationMetaEntity implements MetaEntity {
 	}
 
 	public String getPackageName() {
-		PackageElement packageOf = context.getProcessingEnvironment().getElementUtils().getPackageOf( element );
-		return context.getProcessingEnvironment().getElementUtils().getName( packageOf.getQualifiedName() ).toString();
+		PackageElement packageOf = context.getElementUtils().getPackageOf( element );
+		return context.getElementUtils().getName( packageOf.getQualifiedName() ).toString();
 	}
 
 	public List<MetaAttribute> getMembers() {
@@ -147,6 +117,16 @@ public class AnnotationMetaEntity implements MetaEntity {
 		for ( MetaAttribute attribute : attributes ) {
 			members.put( attribute.getPropertyName(), attribute );
 		}
+	}
+
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder();
+		sb.append( "AnnotationMetaEntity" );
+		sb.append( "{element=" ).append( element );
+		sb.append( ", members=" ).append( members );
+		sb.append( '}' );
+		return sb.toString();
 	}
 
 	private void addPersistentMembers(List<? extends Element> membersOfClass, AccessType membersKind) {
@@ -170,18 +150,7 @@ public class AnnotationMetaEntity implements MetaEntity {
 		}
 	}
 
-	@Override
-	public String toString() {
-		final StringBuilder sb = new StringBuilder();
-		sb.append( "AnnotationMetaEntity" );
-		sb.append( "{element=" ).append( element );
-		sb.append( ", members=" ).append( members );
-		sb.append( '}' );
-		return sb.toString();
-	}
-
-	private void init() {
-		members = new HashMap<String, MetaAttribute>();
+	protected void init() {
 		TypeUtils.determineAccessTypeForHierarchy( element, context );
 		entityAccessTypeInfo = context.getAccessTypeInfo( getQualifiedName() );
 
@@ -248,21 +217,18 @@ public class AnnotationMetaEntity implements MetaEntity {
 
 		@Override
 		public AnnotationMetaAttribute visitDeclared(DeclaredType declaredType, Element element) {
-			TypeElement returnedElement = ( TypeElement ) context.getProcessingEnvironment()
-					.getTypeUtils()
-					.asElement( declaredType );
+			TypeElement returnedElement = ( TypeElement ) context.getTypeUtils().asElement( declaredType );
 			// WARNING: .toString() is necessary here since Name equals does not compare to String
 			String fqNameOfReturnType = returnedElement.getQualifiedName().toString();
-			String collection = COLLECTIONS.get( fqNameOfReturnType );
+			String collection = Constants.COLLECTIONS.get( fqNameOfReturnType );
 			String targetEntity = getTargetEntity( element.getAnnotationMirrors() );
 			if ( collection != null ) {
 				if ( TypeUtils.containsAnnotation( element, ElementCollection.class ) ) {
 					String explicitTargetEntity = getTargetEntity( element.getAnnotationMirrors() );
-					TypeMirror collectionElementType = getCollectionElementType(
-							declaredType, fqNameOfReturnType, explicitTargetEntity
+					TypeMirror collectionElementType = TypeUtils.getCollectionElementType(
+							declaredType, fqNameOfReturnType, explicitTargetEntity, context
 					);
-					final TypeElement collectionElement = ( TypeElement ) context.getProcessingEnvironment()
-							.getTypeUtils()
+					final TypeElement collectionElement = ( TypeElement ) context.getTypeUtils()
 							.asElement( collectionElementType );
 					AccessTypeInformation accessTypeInfo = context.getAccessTypeInfo( collectionElement.getQualifiedName().toString() );
 					if ( accessTypeInfo == null ) {
@@ -281,8 +247,6 @@ public class AnnotationMetaEntity implements MetaEntity {
 					else {
 						accessTypeInfo.setDefaultAccessType( entityAccessTypeInfo.getAccessType() );
 					}
-					AnnotationMetaEntity metaEntity = new AnnotationMetaEntity( collectionElement, context );
-					context.addMetaSuperclassOrEmbeddable( metaEntity.getQualifiedName(), metaEntity );
 				}
 				if ( collection.equals( "javax.persistence.metamodel.MapAttribute" ) ) {
 					return createAnnotationMetaAttributeForMap( declaredType, element, collection, targetEntity );
@@ -351,28 +315,6 @@ public class AnnotationMetaEntity implements MetaEntity {
 					keyType,
 					getElementType( declaredType, targetEntity )
 			);
-		}
-
-		private TypeMirror getCollectionElementType(DeclaredType t, String fqNameOfReturnedType, String explicitTargetEntityName) {
-			TypeMirror collectionElementType;
-			if ( explicitTargetEntityName != null ) {
-				Elements elements = context.getProcessingEnvironment().getElementUtils();
-				TypeElement element = elements.getTypeElement( explicitTargetEntityName );
-				collectionElementType = element.asType();
-			}
-			else {
-				List<? extends TypeMirror> typeArguments = t.getTypeArguments();
-				if ( typeArguments.size() == 0 ) {
-					throw new MetaModelGenerationException( "Unable to determine collection type for property in " + getSimpleName() );
-				}
-				else if ( Map.class.getCanonicalName().equals( fqNameOfReturnedType ) ) {
-					collectionElementType = t.getTypeArguments().get( 1 );
-				}
-				else {
-					collectionElementType = t.getTypeArguments().get( 0 );
-				}
-			}
-			return collectionElementType;
 		}
 
 		private String getElementType(DeclaredType declaredType, String targetEntity) {
@@ -446,8 +388,8 @@ public class AnnotationMetaEntity implements MetaEntity {
 	}
 
 	/**
-	 * Checks whether the visited type is a basic attibute according to the JPA 2 spec
-	 * ( secction 2.8 Mapping Defaults for Non-Relationship Fields or Properties)
+	 * Checks whether the visited type is a basic attribute according to the JPA 2 spec
+	 * ( section 2.8 Mapping Defaults for Non-Relationship Fields or Properties)
 	 */
 	class BasicAttributeVisitor extends SimpleTypeVisitor6<Boolean, Element> {
 		@Override
@@ -458,11 +400,9 @@ public class AnnotationMetaEntity implements MetaEntity {
 		@Override
 		public Boolean visitArray(ArrayType t, Element element) {
 			TypeMirror componentMirror = t.getComponentType();
-			TypeElement componentElement = ( TypeElement ) context.getProcessingEnvironment()
-					.getTypeUtils()
-					.asElement( componentMirror );
+			TypeElement componentElement = ( TypeElement ) context.getTypeUtils().asElement( componentMirror );
 
-			return BASIC_ARRAY_TYPES.contains( componentElement.getQualifiedName().toString() );
+			return Constants.BASIC_ARRAY_TYPES.contains( componentElement.getQualifiedName().toString() );
 		}
 
 		@Override
@@ -474,16 +414,14 @@ public class AnnotationMetaEntity implements MetaEntity {
 			if ( ElementKind.CLASS.equals( element.getKind() ) ) {
 				TypeElement typeElement = ( ( TypeElement ) element );
 				String typeName = typeElement.getQualifiedName().toString();
-				if ( BASIC_TYPES.contains( typeName ) ) {
+				if ( Constants.BASIC_TYPES.contains( typeName ) ) {
 					return Boolean.TRUE;
 				}
 				if ( TypeUtils.containsAnnotation( element, Embeddable.class ) ) {
 					return Boolean.TRUE;
 				}
 				for ( TypeMirror mirror : typeElement.getInterfaces() ) {
-					TypeElement interfaceElement = ( TypeElement ) context.getProcessingEnvironment()
-							.getTypeUtils()
-							.asElement( mirror );
+					TypeElement interfaceElement = ( TypeElement ) context.getTypeUtils().asElement( mirror );
 					if ( "java.io.Serializable".equals( interfaceElement.getQualifiedName().toString() ) ) {
 						return Boolean.TRUE;
 					}

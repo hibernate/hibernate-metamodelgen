@@ -18,6 +18,7 @@
 package org.hibernate.jpamodelgen;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -30,13 +31,22 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
+import javax.lang.model.util.SimpleTypeVisitor6;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 import javax.persistence.MappedSuperclass;
 import javax.tools.Diagnostic;
 
+import org.hibernate.jpamodelgen.annotation.AnnotationEmbeddable;
 import org.hibernate.jpamodelgen.annotation.AnnotationMetaEntity;
 import org.hibernate.jpamodelgen.model.MetaEntity;
+import org.hibernate.jpamodelgen.util.Constants;
+import org.hibernate.jpamodelgen.util.StringUtil;
 import org.hibernate.jpamodelgen.util.TypeUtils;
 import org.hibernate.jpamodelgen.xml.XmlParser;
 
@@ -86,13 +96,8 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 		if ( !xmlProcessed ) {
 			XmlParser parser = new XmlParser( context );
-			parser.parsePersistenceXml();
+			parser.parseXml();
 			xmlProcessed = true;
-		}
-
-		if ( !hostJPAAnnotations( annotations ) ) {
-			context.logMessage( Diagnostic.Kind.OTHER, "Current processing round does not contain entities" );
-			return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
 		}
 
 		if ( context.isPersistenceUnitCompletelyXmlConfigured() ) {
@@ -105,8 +110,8 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 		Set<? extends Element> elements = roundEnvironment.getRootElements();
 		for ( Element element : elements ) {
-			if ( TypeUtils.containsAnnotation( element, Entity.class, MappedSuperclass.class, Embeddable.class ) ) {
-				context.logMessage( Diagnostic.Kind.OTHER, "Processing " + element.toString() );
+			if ( isJPAEntity( element ) ) {
+				context.logMessage( Diagnostic.Kind.OTHER, "Processing annotated class " + element.toString() );
 				handleRootElementAnnotationMirrors( element );
 			}
 		}
@@ -116,59 +121,162 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 	private void createMetaModelClasses() {
 		for ( MetaEntity entity : context.getMetaEntities() ) {
-			context.logMessage( Diagnostic.Kind.OTHER, "Writing meta model for " + entity );
+			context.logMessage( Diagnostic.Kind.OTHER, "Writing meta model for entity " + entity );
 			ClassWriter.writeFile( entity, context );
 		}
 
-		for ( MetaEntity entity : context.getMetaSuperclassOrEmbeddable() ) {
-			context.logMessage( Diagnostic.Kind.OTHER, "Writing meta model for " + entity );
-			ClassWriter.writeFile( entity, context );
+		Collection<MetaEntity> toProcessEntities = context.getMetaSuperclassOrEmbeddable();
+		while ( !toProcessEntities.isEmpty() ) {
+			Set<MetaEntity> processedEntities = new HashSet<MetaEntity>();
+			for ( MetaEntity entity : toProcessEntities ) {
+				if ( containedInEntity( toProcessEntities, entity ) ) {
+					continue;
+				}
+				context.logMessage(
+						Diagnostic.Kind.OTHER, "Writing meta model for embeddable/mapped superclass" + entity
+				);
+				ClassWriter.writeFile( entity, context );
+				processedEntities.add( entity );
+			}
+			toProcessEntities.removeAll( processedEntities );
 		}
 	}
 
-	private boolean hostJPAAnnotations(Collection<? extends TypeElement> annotations) {
-		for ( TypeElement type : annotations ) {
-			if ( TypeUtils.isTypeElementOfType( type, Entity.class ) ) {
-				return true;
+	private boolean containedInEntity(Collection<MetaEntity> entities, MetaEntity containedEntity) {
+		ContainsAttributeTypeVisitor visitor = new ContainsAttributeTypeVisitor(
+				containedEntity.getTypeElement(), context
+		);
+		for ( MetaEntity entity : entities ) {
+			if ( entity.equals( containedEntity ) ) {
+				continue;
 			}
-			else if ( TypeUtils.isTypeElementOfType( type, Embeddable.class ) ) {
-				return true;
+			for ( Element subElement : ElementFilter.fieldsIn( entity.getTypeElement().getEnclosedElements() ) ) {
+				TypeMirror mirror = subElement.asType();
+				if ( !TypeKind.DECLARED.equals( mirror.getKind() ) ) {
+					 continue;
+				}
+				boolean contains = mirror.accept( visitor, subElement );
+				if ( contains ) {
+					return true;
+				}
 			}
-			else if ( TypeUtils.isTypeElementOfType( type, MappedSuperclass.class ) ) {
-				return true;
+			for ( Element subElement : ElementFilter.methodsIn( entity.getTypeElement().getEnclosedElements() ) ) {
+				TypeMirror mirror = subElement.asType();
+				if ( !TypeKind.DECLARED.equals( mirror.getKind() ) ) {
+					continue;
+				}
+				boolean contains = mirror.accept( visitor, subElement );
+				if ( contains ) {
+					return true;
+				}
 			}
 		}
 		return false;
 	}
 
+	private boolean isJPAEntity(Element element) {
+		return TypeUtils.containsAnnotation( element, Entity.class, MappedSuperclass.class, Embeddable.class );
+	}
+
 	private void handleRootElementAnnotationMirrors(final Element element) {
 		List<? extends AnnotationMirror> annotationMirrors = element.getAnnotationMirrors();
 		for ( AnnotationMirror mirror : annotationMirrors ) {
-			if ( element.getKind() == ElementKind.CLASS ) {
-				String fqn = ( ( TypeElement ) element ).getQualifiedName().toString();
-				MetaEntity alreadyExistingMetaEntity = context.getMetaEntity( fqn );
-				if ( alreadyExistingMetaEntity != null && alreadyExistingMetaEntity.isMetaComplete() ) {
-					String msg = "Skipping processing of annotations for " + fqn + " since xml configuration is metadata complete.";
-					context.logMessage( Diagnostic.Kind.OTHER, msg );
-					continue;
-				}
-
-				AnnotationMetaEntity metaEntity = new AnnotationMetaEntity( ( TypeElement ) element, context );
-				if ( alreadyExistingMetaEntity != null ) {
-					metaEntity.mergeInMembers( alreadyExistingMetaEntity.getMembers() );
-				}
-				addMetaEntityToContext( mirror, metaEntity );
+			if ( !ElementKind.CLASS.equals( element.getKind() ) ) {
+				continue;
 			}
+
+			String fqn = ( ( TypeElement ) element ).getQualifiedName().toString();
+			MetaEntity alreadyExistingMetaEntity = tryGettingExistingEntityFromContext( mirror, fqn );
+			if ( alreadyExistingMetaEntity != null && alreadyExistingMetaEntity.isMetaComplete() ) {
+				String msg = "Skipping processing of annotations for " + fqn + " since xml configuration is metadata complete.";
+				context.logMessage( Diagnostic.Kind.OTHER, msg );
+				continue;
+			}
+
+			AnnotationMetaEntity metaEntity;
+			if ( TypeUtils.containsAnnotation( element, Embeddable.class ) ) {
+				metaEntity = new AnnotationEmbeddable( ( TypeElement ) element, context );
+			}
+			else {
+				metaEntity = new AnnotationMetaEntity( ( TypeElement ) element, context );
+			}
+
+			if ( alreadyExistingMetaEntity != null ) {
+				metaEntity.mergeInMembers( alreadyExistingMetaEntity.getMembers() );
+			}
+			addMetaEntityToContext( mirror, metaEntity );
 		}
+	}
+
+	private MetaEntity tryGettingExistingEntityFromContext(AnnotationMirror mirror, String fqn) {
+		MetaEntity alreadyExistingMetaEntity = null;
+		if ( TypeUtils.isAnnotationMirrorOfType( mirror, Entity.class ) ) {
+			alreadyExistingMetaEntity = context.getMetaEntity( fqn );
+		}
+		else if ( TypeUtils.isAnnotationMirrorOfType( mirror, MappedSuperclass.class )
+				|| TypeUtils.isAnnotationMirrorOfType( mirror, Embeddable.class ) ) {
+			alreadyExistingMetaEntity = context.getMetaSuperclassOrEmbeddable( fqn );
+		}
+		return alreadyExistingMetaEntity;
 	}
 
 	private void addMetaEntityToContext(AnnotationMirror mirror, AnnotationMetaEntity metaEntity) {
 		if ( TypeUtils.isAnnotationMirrorOfType( mirror, Entity.class ) ) {
 			context.addMetaEntity( metaEntity.getQualifiedName(), metaEntity );
 		}
-		else if ( TypeUtils.isAnnotationMirrorOfType( mirror, MappedSuperclass.class )
-				|| TypeUtils.isAnnotationMirrorOfType( mirror, Embeddable.class ) ) {
+		else if ( TypeUtils.isAnnotationMirrorOfType( mirror, MappedSuperclass.class ) ) {
 			context.addMetaSuperclassOrEmbeddable( metaEntity.getQualifiedName(), metaEntity );
+		}
+		else if ( TypeUtils.isAnnotationMirrorOfType( mirror, Embeddable.class ) ) {
+			context.addMetaSuperclassOrEmbeddable( metaEntity.getQualifiedName(), metaEntity );
+		}
+	}
+
+
+	class ContainsAttributeTypeVisitor extends SimpleTypeVisitor6<Boolean, Element> {
+
+		private Context context;
+		private TypeElement type;
+
+		ContainsAttributeTypeVisitor(TypeElement elem, Context context) {
+			this.context = context;
+			this.type = elem;
+		}
+
+		@Override
+		public Boolean visitDeclared(DeclaredType declaredType, Element element) {
+			TypeElement returnedElement = ( TypeElement ) context.getTypeUtils().asElement( declaredType );
+
+			String fqNameOfReturnType = returnedElement.getQualifiedName().toString();
+			String collection = Constants.COLLECTIONS.get( fqNameOfReturnType );
+			if ( collection != null ) {
+				TypeMirror collectionElementType = TypeUtils.getCollectionElementType(
+						declaredType, fqNameOfReturnType, null, context
+				);
+				returnedElement = ( TypeElement ) context.getTypeUtils().asElement( collectionElementType );
+			}
+
+			if ( type.getQualifiedName().toString().equals( returnedElement.getQualifiedName().toString() ) ) {
+				return Boolean.TRUE;
+			}
+			else {
+				return Boolean.FALSE;
+			}
+		}
+
+		@Override
+		public Boolean visitExecutable(ExecutableType t, Element element) {
+			if ( !element.getKind().equals( ElementKind.METHOD ) ) {
+				return Boolean.FALSE;
+			}
+
+			String string = element.getSimpleName().toString();
+			if ( !StringUtil.isPropertyName( string ) ) {
+				return Boolean.FALSE;
+			}
+
+			TypeMirror returnType = t.getReturnType();
+			return returnType.accept( this, element );
 		}
 	}
 }

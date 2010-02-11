@@ -47,7 +47,7 @@ public abstract class AnnotationMetaAttribute implements MetaAttribute {
 	}
 
 	public String getPropertyName() {
-		Elements elementsUtil = parent.getContext().getProcessingEnvironment().getElementUtils();
+		Elements elementsUtil = parent.getContext().getElementUtils();
 		if ( element.getKind() == ElementKind.FIELD ) {
 			return element.getSimpleName().toString();
 		}

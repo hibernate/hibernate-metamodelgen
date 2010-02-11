@@ -18,7 +18,6 @@
 package org.hibernate.jpamodelgen.xml;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,65 +66,61 @@ public class XmlMetaEntity implements MetaEntity {
 		COLLECTIONS.put( "java.util.Map", "javax.persistence.metamodel.MapAttribute" );
 	}
 
-	private final String clazzName;
-	private final String packageName;
-	private final ImportContext importContext;
-	private final List<MetaAttribute> members = new ArrayList<MetaAttribute>();
-	private final TypeElement element;
-	private final Context context;
-	private final AccessTypeInformation accessTypeInfo;
+	protected final String clazzName;
+	protected final String packageName;
+	protected final ImportContext importContext;
+	protected final List<MetaAttribute> members = new ArrayList<MetaAttribute>();
+	protected final TypeElement element;
+	protected final Context context;
+	protected final boolean isMetaComplete;
 
-	private boolean isMetaComplete;
+	private Attributes attributes;
+	private EmbeddableAttributes embeddableAttributes;
+	protected AccessTypeInformation accessTypeInfo;
 
 	public XmlMetaEntity(Entity ormEntity, String packageName, TypeElement element, Context context) {
-		String className = ormEntity.getClazz();
+		this( ormEntity.getClazz(), packageName, element, context, ormEntity.isMetadataComplete() );
+		this.attributes = ormEntity.getAttributes();
+		this.embeddableAttributes = null;
+		// entities can be directly initialised
+		init();
+	}
+
+	protected XmlMetaEntity(MappedSuperclass mappedSuperclass, String packageName, TypeElement element, Context context) {
+		this( mappedSuperclass.getClazz(), packageName, element, context, mappedSuperclass.isMetadataComplete() );
+		this.attributes = mappedSuperclass.getAttributes();
+		this.embeddableAttributes = null;
+	}
+
+	protected XmlMetaEntity(Embeddable embeddable, String packageName, TypeElement element, Context context) {
+		this( embeddable.getClazz(), packageName, element, context, embeddable.isMetadataComplete() );
+		this.attributes = null;
+		this.embeddableAttributes = embeddable.getAttributes();
+	}
+
+	private XmlMetaEntity(String clazz, String packageName, TypeElement element, Context context, Boolean metaComplete) {
+		String className = clazz;
 		if ( StringUtil.isFullyQualified( className ) ) {
 			// we have to extract the package name from the fqcn. default package name gets ignored
 			packageName = StringUtil.packageNameFromFqcn( className );
-			className = StringUtil.classNameFromFqcn( className );
+			className = StringUtil.classNameFromFqcn( clazz );
 		}
 		this.clazzName = className;
 		this.packageName = packageName;
 		this.context = context;
 		this.importContext = new ImportContextImpl( getPackageName() );
 		this.element = element;
-		this.accessTypeInfo = context.getAccessTypeInfo( getQualifiedName() );
-		initIsMetaComplete( ormEntity.isMetadataComplete() );
-		parseAttributes( ormEntity.getAttributes() );
+		this.isMetaComplete = initIsMetaComplete( metaComplete );
 	}
 
-	public XmlMetaEntity(MappedSuperclass mappedSuperclass, String packageName, TypeElement element, Context context) {
-		this.clazzName = mappedSuperclass.getClazz();
-		this.packageName = packageName;
-		this.context = context;
-		this.importContext = new ImportContextImpl( getPackageName() );
-		this.element = element;
+	protected void init() {
 		this.accessTypeInfo = context.getAccessTypeInfo( getQualifiedName() );
-		initIsMetaComplete( mappedSuperclass.isMetadataComplete() );
-		parseAttributes( mappedSuperclass.getAttributes() );
-	}
-
-	public XmlMetaEntity(Embeddable embeddable, String packageName, TypeElement element, Context context) {
-		this.clazzName = embeddable.getClazz();
-		this.packageName = packageName;
-		this.context = context;
-		this.importContext = new ImportContextImpl( getPackageName() );
-		this.element = element;
-		this.accessTypeInfo = context.getAccessTypeInfo( getQualifiedName() );
-		initIsMetaComplete( embeddable.isMetadataComplete() );
-		parseEmbeddableAttributes( embeddable.getAttributes() );
-	}
-
-	private void initIsMetaComplete(Boolean metadataComplete) {
-		if ( context.isPersistenceUnitCompletelyXmlConfigured() ) {
-			isMetaComplete = true;
-			return;
+		if ( attributes != null ) {
+			parseAttributes( attributes );
 		}
-		if ( Boolean.TRUE.equals( metadataComplete ) ) {
-			isMetaComplete = true;
-			return;
+		else {
+			parseEmbeddableAttributes( embeddableAttributes );
 		}
-		isMetaComplete = false;
 	}
 
 	public String getSimpleName() {
@@ -163,10 +158,26 @@ public class XmlMetaEntity implements MetaEntity {
 	public TypeElement getTypeElement() {
 		return element;
 	}
-	
+
 	@Override
 	public boolean isMetaComplete() {
 		return isMetaComplete;
+	}
+
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder();
+		sb.append( "XmlMetaEntity" );
+		sb.append( "{accessTypeInfo=" ).append( accessTypeInfo );
+		sb.append( ", clazzName='" ).append( clazzName ).append( '\'' );
+		sb.append( ", members=" ).append( members );
+		sb.append( ", isMetaComplete=" ).append( isMetaComplete );
+		sb.append( '}' );
+		return sb.toString();
+	}
+
+	private boolean initIsMetaComplete(Boolean metadataComplete) {
+		return context.isPersistenceUnitCompletelyXmlConfigured() || Boolean.TRUE.equals( metadataComplete );
 	}
 
 	private String[] getCollectionType(String propertyName, String explicitTargetEntity, ElementKind expectedElementKind) {
@@ -221,7 +232,8 @@ public class XmlMetaEntity implements MetaEntity {
 			if ( ElementKind.METHOD.equals( elem.getKind() ) ) {
 				name = StringUtil.getPropertyName( name );
 				mirror = ( ( ExecutableElement ) elem ).getReturnType();
-			} else {
+			}
+			else {
 				mirror = elem.asType();
 			}
 
@@ -244,6 +256,21 @@ public class XmlMetaEntity implements MetaEntity {
 				case BOOLEAN: {
 					return "java.lang.Boolean";
 				}
+				case BYTE: {
+					return "java.lang.Byte";
+				}
+				case SHORT: {
+					return "java.lang.Short";
+				}
+				case CHAR: {
+					return "java.lang.Char";
+				}
+				case FLOAT: {
+					return "java.lang.Float";
+				}
+				case DOUBLE: {
+					return "java.lang.Double";
+				}
 				case DECLARED: {
 					return mirror.toString();
 				}
@@ -261,23 +288,9 @@ public class XmlMetaEntity implements MetaEntity {
 		return null;
 	}
 
-	@Override
-	public String toString() {
-		final StringBuilder sb = new StringBuilder();
-		sb.append( "XmlMetaEntity" );
-		sb.append( "{accessTypeInfo=" ).append( accessTypeInfo );
-		sb.append( ", clazzName='" ).append( clazzName ).append( '\'' );
-		sb.append( ", members=" ).append( members );
-		sb.append( ", isMetaComplete=" ).append( isMetaComplete );
-		sb.append( '}' );
-		return sb.toString();
-	}
-
 	private void parseAttributes(Attributes attributes) {
 		XmlMetaSingleAttribute attribute;
-		if ( !attributes.getId().isEmpty() ) {
-			// TODO what do we do if there are more than one id nodes?
-			Id id = attributes.getId().get( 0 );
+		for ( Id id : attributes.getId() ) {
 			ElementKind elementKind = getElementKind( id.getAccess() );
 			String type = getType( id.getName(), null, elementKind );
 			if ( type != null ) {

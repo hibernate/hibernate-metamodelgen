@@ -27,6 +27,7 @@ import org.hibernate.jpamodelgen.test.util.CompilationTest;
 import org.hibernate.jpamodelgen.test.util.TestUtil;
 
 import static org.hibernate.jpamodelgen.test.util.TestUtil.assertAbsenceOfFieldInMetamodelFor;
+import static org.hibernate.jpamodelgen.test.util.TestUtil.assertAttributeTypeInMetaModelFor;
 import static org.hibernate.jpamodelgen.test.util.TestUtil.assertMetamodelClassGeneratedFor;
 import static org.hibernate.jpamodelgen.test.util.TestUtil.assertPresenceOfFieldInMetamodelFor;
 
@@ -38,27 +39,57 @@ public class MixedConfigurationTest extends CompilationTest {
 	public void testDefaultAccessTypeApplied() {
 		assertMetamodelClassGeneratedFor( Vehicle.class );
 		assertMetamodelClassGeneratedFor( Car.class );
-		assertAbsenceOfFieldInMetamodelFor( Car.class, "horsePower" );
+
+		assertAbsenceOfFieldInMetamodelFor(
+				Car.class, "horsePower", "'horsePower' should not appear in metamodel since it does have no field."
+		);
 	}
 
 	@Test
 	public void testExplicitXmlConfiguredAccessTypeApplied() {
 		assertMetamodelClassGeneratedFor( Vehicle.class );
 		assertMetamodelClassGeneratedFor( Truck.class );
+
 		assertPresenceOfFieldInMetamodelFor(
 				Truck.class, "horsePower", "Property 'horsePower' has explicit access type and should be in metamodel"
 		);
+		assertAttributeTypeInMetaModelFor( Truck.class, "horsePower", Integer.class, "Wrong meta model type" );
 	}
 
 	@Test
 	public void testMixedConfiguration() {
 		assertMetamodelClassGeneratedFor( RentalCar.class );
 		assertMetamodelClassGeneratedFor( RentalCompany.class );
+
 		assertPresenceOfFieldInMetamodelFor(
 				RentalCar.class, "company", "Property 'company' should be included due to xml configuration"
 		);
+		assertAttributeTypeInMetaModelFor( RentalCar.class, "company", RentalCompany.class, "Wrong meta model type" );
+
 		assertPresenceOfFieldInMetamodelFor(
 				RentalCar.class, "insurance", "Property 'insurance' should be included since it is an embeddable"
+		);
+		assertAttributeTypeInMetaModelFor( RentalCar.class, "insurance", Insurance.class, "Wrong meta model type" );
+	}
+
+	@Test
+	public void testAccessTypeForXmlConfiguredEmbeddables() {
+		assertMetamodelClassGeneratedFor( Coordinates.class );
+		assertPresenceOfFieldInMetamodelFor(
+				Coordinates.class, "longitude", "field exists and should be in metamodel"
+		);
+		assertPresenceOfFieldInMetamodelFor( Coordinates.class, "latitude", "field exists and should be in metamodel" );
+
+		assertMetamodelClassGeneratedFor( ZeroCoordinates.class );
+		assertAbsenceOfFieldInMetamodelFor(
+				ZeroCoordinates.class,
+				"longitude",
+				"Field access should be used, but ZeroCoordinates does not define fields"
+		);
+		assertAbsenceOfFieldInMetamodelFor(
+				ZeroCoordinates.class,
+				"latitude",
+				"Field access should be used, but ZeroCoordinates does not define fields"
 		);
 	}
 
@@ -74,6 +105,7 @@ public class MixedConfigurationTest extends CompilationTest {
 		ormFiles.add( dir + "/car.xml" );
 		ormFiles.add( dir + "/rentalcar.xml" );
 		ormFiles.add( dir + "/truck.xml" );
+		ormFiles.add( dir + "/coordinates.xml" );
 		return ormFiles;
 	}
 }

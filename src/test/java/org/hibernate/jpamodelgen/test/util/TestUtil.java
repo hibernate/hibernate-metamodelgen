@@ -114,14 +114,18 @@ public class TestUtil {
 
 	public static void assertAttributeTypeInMetaModelFor(Class<?> clazz, String fieldName, Class<?> expectedType, String errorString) {
 		Field field = getFieldFromMetamodelFor( clazz, fieldName );
-		assertNotNull( field, "Field " + fieldName + " should exist." );
+		assertNotNull( field, "Cannot find field '" + fieldName + "' in " + clazz.getName() );
 		ParameterizedType type = ( ParameterizedType ) field.getGenericType();
 		Type actualType = type.getActualTypeArguments()[1];
 		if ( expectedType.isArray() ) {
 			expectedType = expectedType.getComponentType();
 			actualType = ( ( GenericArrayType ) actualType ).getGenericComponentType();
 		}
-		assertEquals( actualType, expectedType, errorString );
+		assertEquals(
+				actualType,
+				expectedType,
+				"Types do not match: " + errorString
+		);
 	}
 
 	public static void assertMapAttributesInMetaModelFor(Class<?> clazz, String fieldName, Class<?> expectedMapKey, Class<?> expectedMapValue, String errorString) {
@@ -180,13 +184,13 @@ public class TestUtil {
 
 	private static class MetaModelFilenameFilter implements FileFilter {
 		@Override
-		public boolean accept(File pathname) {
-			if ( pathname.isDirectory() ) {
+		public boolean accept(File pathName) {
+			if ( pathName.isDirectory() ) {
 				return true;
 			}
 			else {
-				return pathname.getAbsolutePath().endsWith( "_.java" )
-						|| pathname.getAbsolutePath().endsWith( "_.class" );
+				return pathName.getAbsolutePath().endsWith( "_.java" )
+						|| pathName.getAbsolutePath().endsWith( "_.class" );
 			}
 		}
 	}
