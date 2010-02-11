@@ -125,6 +125,9 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			ClassWriter.writeFile( entity, context );
 		}
 
+		// we cannot process the delayed entities in any order. There might be dependencies between them.
+		// we need to process the top level entities first
+		// TODO make sure that we don't run into circualt dependecies here
 		Collection<MetaEntity> toProcessEntities = context.getMetaSuperclassOrEmbeddable();
 		while ( !toProcessEntities.isEmpty() ) {
 			Set<MetaEntity> processedEntities = new HashSet<MetaEntity>();
