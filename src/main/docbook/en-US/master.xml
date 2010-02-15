@@ -49,20 +49,126 @@
     <section id="whatisit" revision="1">
       <title>What is it about?</title>
 
-      <para>Hibernate Static Metamodel Generator is an annotation processor
-      with the task of creating the static metamodel classes for JPA 2
-      entities. In the following I will show how to integrate the annotation
-      processor into your build environment.</para>
+      <para>JPA 2 defines a new typesafe <classname>Criteria</classname> API
+      which allows criteria queries to be constructed in a strongly-typed
+      manner, using metamodel objects to provide type safety. This type saftey
+      is of course only useful for developers if the task of the metamodel
+      generation can be automated. Hibernate Static Metamodel Generator is an
+      annotation processor based on the annotation processing API defined in
+      <ulink url="???">JSR 269</ulink> with the task of creating the static
+      metamodel classes for JPA 2 entities. The following examples show a
+      managed JPA 2 entity, together with is metamodel class and an example
+      typesafe query.</para>
+
+      <example id="jpa2-entity-example">
+        <title>JPA 2 annotated entity</title>
+
+        <programlisting>@Entity public class Order {
+    @Id 
+    Integer id;
+    @ManyToOne 
+    Customer customer;
+    @OneToMany 
+    Set&lt;Item&gt; items;
+    BigDecimal totalCost;
+    ...
+}
+</programlisting>
+      </example>
+
+      <example id="metamodel-class-example">
+        <title>Matching metamodel class for entity
+        <classname>Order</classname></title>
+
+        <programlisting>@StaticMetamodel(Order.class)
+public class Order_ {
+    public static volatile SingularAttribute&lt;Order, Integer&gt; id;
+    public static volatile SingularAttribute&lt;Order, Customer&gt; customer;
+    public static volatile SetAttribute&lt;Order, Item&gt; items;
+    public static volatile SingularAttribute&lt;Order, BigDecimal&gt; totalCost;
+}
+</programlisting>
+      </example>
+
+      <example id="criteria-example" label="">
+        <title>Example of typesafe query using the metamodel class
+        <classname>Order_</classname> </title>
+
+        <programlisting>CriteriaBuilder cb = ordersEntityManager.getCriteriaBuilder();
+CriteriaQuery&lt;Order&gt; cq = cb.createQuery(Order.class);
+SetJoin&lt;Order, Item&gt; itemNode = cq.from(Order.class).join(Order_.orderItems);
+cq.where( cb.equal(itemNode.get(Item_.id), 5 ) ).distinct(true);
+</programlisting>
+      </example>
     </section>
 
-    <section id="installation" revision="1">
-      <title>Installation</title>
+    <section>
+      <title>Canonical Metamodel</title>
 
-      <para><section revision="1">
-          <title>Prerequisites</title>
+      <para>The canonical metamodel classes the annotation processor produces
+      for every managed class in the persistence unit follow these rules
+      defined in the JPA 2 specification:</para>
 
-          <para />
-        </section></para>
+      <para><itemizedlist>
+          <listitem>
+            <para>For each managed class X in package p, a metamodel class X_
+            in package p is created.</para>
+          </listitem>
+
+          <listitem>
+            <para>The name of the metamodel class is derived from the name of
+            the managed class by appending "_" to the name of the managed
+            class.</para>
+          </listitem>
+
+          <listitem>
+            <para>The metamodel class X_ must be annotated with the
+            javax.persistence.Static- Metamodel annotation.</para>
+          </listitem>
+
+          <listitem>
+            <para>If class X extends another class S, where S is the most
+            derived managed class (i.e., entity or mapped superclass) extended
+            by X, then class X_ must extend class S_, where S_ is the
+            metamodel class created for S.</para>
+          </listitem>
+
+          <listitem>
+            <para>For every persistent non-collection-valued attribute y
+            declared by class X, where the type of y is Y, the metamodel class
+            must contain a declaration as follows: <programlisting>public static volatile SingularAttribute&lt;X, Y&gt; y;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>For every persistent collection-valued attribute z declared
+            by class X, where the element type of z is Z, the metamodel class
+            must contain a declaration as follows:<itemizedlist>
+                <listitem>
+                  <para>if the collection type of z is java.util.Collection,
+                  then <programlisting>public static volatile CollectionAttribute&lt;X, Z&gt; z;</programlisting></para>
+                </listitem>
+
+                <listitem>
+                  <para>if the collection type of z is java.util.Set, then
+                  <programlisting>public static volatile SetAttribute&lt;X, Z&gt; z;</programlisting></para>
+                </listitem>
+
+                <listitem>
+                  <para>if the collection type of z is java.util.List, then
+                  <programlisting>public static volatile ListAttribute&lt;X, Z&gt; z;</programlisting></para>
+                </listitem>
+
+                <listitem>
+                  <para>if the collection type of z is java.util.Map, then
+                  <programlisting>public static volatile MapAttribute&lt;X, K, Z&gt; z;</programlisting>
+                  where K is the type of the key of the map in class X</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+        </itemizedlist>Import statements must be included for the needed
+      <classname>javax.persistence.metamodel</classname> types as appropriate
+      and all classes <classname>X</classname>, <classname>Y</classname>,
+      <classname>Z</classname>, and <classname>K</classname>.</para>
     </section>
   </chapter>
 
@@ -76,7 +182,20 @@
     <classname>javax.annotation.processing.Processor</classname> in the
     <filename>META-INF/services</filename> listing
     <classname>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</classname>
-    as annotation processor.</para>
+    as annotation processor. However, a JDK 6 is a prerequisite. The jar file
+    itself can be found in the <ulink url="http://repository.jboss.com/">JBoss
+    Maven repository</ulink> under:</para>
+
+    <example id="maven-dependency" label="">
+      <title>Maven dependency for Hibernate Static Metamodel Generator</title>
+
+      <programlisting>&lt;dependency&gt;
+    &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
+    &lt;artifactId&gt;hibernate-jpamodelgen&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+&lt;/dependency&gt;
+</programlisting>
+    </example>
 
     <section>
       <title>Usage from the command line</title>
@@ -181,6 +300,11 @@
     <section>
       <title>Usage within the IDE</title>
 
+      <para>Of course you also want to have annotation processing available in
+      your favorite IDE. The following paragraphs and screenshots show you how
+      to enable the Hibernate Static Metamodel Generator within your
+      IDE.</para>
+
       <section>
         <title>Idea</title>
 
@@ -196,12 +320,17 @@
                        scalefit="1" />
           </imageobject>
         </mediaobject>
-
-        <para></para>
       </section>
 
       <section>
         <title>Eclipse</title>
+
+        <para>In Eclipse from the Galileo release onwards exists an additional
+        configuration section under Java Compiler where you can configure all
+        kinds of aspects of annotation processing. Just check the "Enable
+        annotation processing" option, configure the directory for the
+        generated sources and finally add the Hibernate Static Metamodel
+        Generator and JPA 2 jar files to the factory path.</para>
 
         <mediaobject>
           <imageobject role="fo">
@@ -221,14 +350,7 @@
       <section>
         <title>NetBeans</title>
 
-        <para>Of course you also want to have annotation processing available
-        in your favorite IDE. In Eclipse (at least since the latest Galileo
-        release) exists an additional configuration section under Java
-        Compiler where you can configure all kinds of aspects of annotation
-        processing. Just check the "Enable annotation processing" option,
-        configure the directory for the generated sources and finally add the
-        Hibernate Static Metamodel Generator and JPA 2 jar files to the
-        factory path.</para>
+        <para>TODO</para>
       </section>
     </section>
 
