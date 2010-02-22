@@ -20,7 +20,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
 <!ENTITY versionNumber "1.0.0">
 <!ENTITY copyrightYear "2010">
-<!ENTITY copyrightHolder "Red Hat Middleware, LLC.">
+<!ENTITY copyrightHolder "Red Hat Inc.">
 ]>
 <book lang="en">
   <bookinfo>
@@ -90,9 +90,8 @@ public class Order_ {
 }</programlisting>
       </example>
 
-      <example id="criteria-example" label="">
-        <title>Example of typesafe query using the metamodel class
-        <classname>Order_</classname></title>
+      <example id="criteria-example">
+        <title>Example of typesafe query</title>
 
         <programlisting>CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 CriteriaQuery&lt;Order&gt; cq = cb.createQuery(Order.class);
@@ -192,8 +191,8 @@ cq.where( cb.equal(itemNode.get(Item_.id), 5 ) ).distinct(true);
     url="http://repository.jboss.com/">JBoss Maven repository</ulink>
     under:</para>
 
-    <example id="maven-dependency" label="">
-      <title>Maven dependency for Hibernate Static Metamodel Generator</title>
+    <example id="maven-dependency">
+      <title>Maven dependency </title>
 
       <programlisting>&lt;dependency&gt;
     &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
@@ -412,7 +411,8 @@ cq.where( cb.equal(itemNode.get(Item_.id), 5 ) ).distinct(true);
         url="http://www.netbeans.org/issues/show_bug.cgi?id=111065">111065</ulink>,
         <ulink
         url="http://www.netbeans.org/issues/show_bug.cgi?id=111293">111293</ulink>
-        and <ulink url="???">111294</ulink>.</para>
+        and <ulink
+        url="http://www.netbeans.org/issues/show_bug.cgi?id=111294">111294</ulink>.</para>
       </section>
     </section>
 
