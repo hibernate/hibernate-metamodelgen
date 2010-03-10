@@ -1,4 +1,4 @@
-                          Hibernate JPA2 Metamodel Generator
+                          Hibernate JPA 2 Metamodel Generator
 
   What is it?
   -----------

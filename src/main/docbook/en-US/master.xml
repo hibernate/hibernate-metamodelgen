@@ -27,7 +27,7 @@
 ]>
 <book lang="en">
   <bookinfo>
-    <title>Hibernate JPA2 Metamodel Generator</title>
+    <title>Hibernate JPA 2 Metamodel Generator</title>
     <subtitle>Reference Guide</subtitle>
     <releaseinfo>&version;</releaseinfo>
     <pubdate>&today;</pubdate>
