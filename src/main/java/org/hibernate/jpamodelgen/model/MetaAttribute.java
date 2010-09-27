@@ -30,4 +30,6 @@ public interface MetaAttribute {
 	String getPropertyName();
 
 	String getTypeDeclaration();
+
+	MetaEntity getParent();
 }
