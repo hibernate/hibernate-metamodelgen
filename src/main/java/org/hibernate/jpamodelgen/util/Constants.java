@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 /*
 * JBoss, Home of Professional Open Source
 * Copyright 2009, Red Hat, Inc. and/or its affiliates, and individual contributors
@@ -29,38 +29,41 @@ public class Constants {
 	public static Map<String, String> COLLECTIONS = new HashMap<String, String>();
 
 	static {
-		COLLECTIONS.put( "java.util.Collection", "javax.persistence.metamodel.CollectionAttribute" );
-		COLLECTIONS.put( "java.util.Set", "javax.persistence.metamodel.SetAttribute" );
-		COLLECTIONS.put( "java.util.List", "javax.persistence.metamodel.ListAttribute" );
-		COLLECTIONS.put( "java.util.Map", "javax.persistence.metamodel.MapAttribute" );
+		COLLECTIONS.put(
+				java.util.Collection.class.getName(), javax.persistence.metamodel.CollectionAttribute.class.getName()
+		);
+		COLLECTIONS.put( java.util.Set.class.getName(), javax.persistence.metamodel.SetAttribute.class.getName() );
+		COLLECTIONS.put( java.util.List.class.getName(), javax.persistence.metamodel.ListAttribute.class.getName() );
+		COLLECTIONS.put( java.util.Map.class.getName(), javax.persistence.metamodel.MapAttribute.class.getName() );
 	}
 
 	public static List<String> BASIC_TYPES = new ArrayList<String>();
 
 	static {
-		BASIC_TYPES.add( "java.lang.String" );
-		BASIC_TYPES.add( "java.lang.Boolean" );
-		BASIC_TYPES.add( "java.lang.Byte" );
-		BASIC_TYPES.add( "java.lang.Character" );
-		BASIC_TYPES.add( "java.lang.Short" );
-		BASIC_TYPES.add( "java.lang.Integer" );
-		BASIC_TYPES.add( "java.lang.Long" );
-		BASIC_TYPES.add( "java.lang.Float" );
-		BASIC_TYPES.add( "java.lang.Double" );
-		BASIC_TYPES.add( "java.math.BigInteger" );
-		BASIC_TYPES.add( "java.math.BigDecimal" );
-		BASIC_TYPES.add( "java.util.Date" );
-		BASIC_TYPES.add( "java.util.Calendar" );
-		BASIC_TYPES.add( "java.sql.Date" );
-		BASIC_TYPES.add( "java.sql.Time" );
-		BASIC_TYPES.add( "java.sql.Timestamp" );
+		BASIC_TYPES.add( java.lang.String.class.getName() );
+		BASIC_TYPES.add( java.lang.Boolean.class.getName() );
+		BASIC_TYPES.add( java.lang.Byte.class.getName() );
+		BASIC_TYPES.add( java.lang.Character.class.getName() );
+		BASIC_TYPES.add( java.lang.Short.class.getName() );
+		BASIC_TYPES.add( java.lang.Integer.class.getName() );
+		BASIC_TYPES.add( java.lang.Long.class.getName() );
+		BASIC_TYPES.add( java.lang.Float.class.getName() );
+		BASIC_TYPES.add( java.lang.Double.class.getName() );
+		BASIC_TYPES.add( java.math.BigInteger.class.getName() );
+		BASIC_TYPES.add( java.math.BigDecimal.class.getName() );
+		BASIC_TYPES.add( java.util.Date.class.getName() );
+		BASIC_TYPES.add( java.util.Calendar.class.getName() );
+		BASIC_TYPES.add( java.sql.Date.class.getName() );
+		BASIC_TYPES.add( java.sql.Time.class.getName() );
+		BASIC_TYPES.add( java.sql.Timestamp.class.getName() );
+		BASIC_TYPES.add( java.sql.Blob.class.getName() );
 	}
 
 	public static List<String> BASIC_ARRAY_TYPES = new ArrayList<String>();
 
 	static {
-		BASIC_ARRAY_TYPES.add( "java.lang.Character" );
-		BASIC_ARRAY_TYPES.add( "java.lang.Byte" );
+		BASIC_ARRAY_TYPES.add( java.lang.Character.class.getName() );
+		BASIC_ARRAY_TYPES.add( java.lang.Byte.class.getName() );
 	}
 
 	public static final String PATH_SEPARATOR = "/";
