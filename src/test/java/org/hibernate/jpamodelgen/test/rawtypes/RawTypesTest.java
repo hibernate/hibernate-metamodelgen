@@ -37,7 +37,7 @@ public class RawTypesTest extends CompilationTest {
 	}
 
 	@Override
-	protected String getPackageNameOfTestSources() {
+	protected String getPackageNameOfCurrentTest() {
 		return DeskWithRawType.class.getPackage().getName();
 	}
 }
