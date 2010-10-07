@@ -27,10 +27,11 @@ import static org.hibernate.jpamodelgen.test.util.TestUtil.assertMetamodelClassG
 
 /**
  * @author Hardy Ferentschik
+ * @see METAGEN-37
  */
 public class TypesMappedSuperclassTest extends CompilationTest {
 	@Test
-	public void testFoo() {
+	public void testExtractClosestRealType() {
 		assertMetamodelClassGeneratedFor( AttachmentGroup.class );
 	}
 
