@@ -4,7 +4,7 @@
 
     <groupId>org.hibernate</groupId>
     <artifactId>hibernate-jpamodelgen</artifactId>
-    <version>1.1.0.CR1</version>
+    <version>1.1.0-SNAPSHOT</version>
 
     <name>Hibernate JPA 2 Metamodel Generator</name>
     <description>Annotation Processor to generate JPA 2 static metamodel classes</description>
@@ -58,8 +58,8 @@
     </issueManagement>
 
     <scm>
-        <connection>scm:svn:https://svn.jboss.org/repos/hibernate/jpamodelgen/tags/hibernate-jpamodelgen-1.1.0.CR1</connection>
-        <url>http://fisheye.jboss.org/browse/Hibernate/jpamodelgen/tags/hibernate-jpamodelgen-1.1.0.CR1</url>
+        <connection>scm:svn:https://svn.jboss.org/repos/hibernate/jpamodelgen/trunk</connection>
+        <url>http://fisheye.jboss.org/browse/Hibernate/jpamodelgen/trunk</url>
     </scm>
     
     <distributionManagement>
