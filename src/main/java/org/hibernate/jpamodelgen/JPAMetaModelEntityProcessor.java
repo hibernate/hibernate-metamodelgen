@@ -109,12 +109,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 
 	@Override
 	public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnvironment) {
-		if ( roundEnvironment.processingOver() ) {
-			if ( !context.isPersistenceUnitCompletelyXmlConfigured() ) {
-				context.logMessage( Diagnostic.Kind.OTHER, "Last processing round." );
-				createMetaModelClasses();
-				context.logMessage( Diagnostic.Kind.OTHER, "Finished processing" );
-			}
+		if ( roundEnvironment.processingOver() || annotations.size() == 0) {
 			return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
 		}
 
@@ -134,6 +129,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 			}
 		}
 
+		createMetaModelClasses();
 		return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
 	}
 
