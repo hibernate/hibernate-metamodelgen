@@ -59,7 +59,8 @@
     </issueManagement>
 
     <scm>
-        <connection>scm:git:git://github.com/hibernate/git@github.com:hibernate/hibernate-metamodelgen.git</connection>
+	    <connection>scm:git:git://github.com/hibernate/hibernate-metamodelgen.git</connection>
+	    <developerConnection>scm:git:git@github.com:hibernate/hibernate-metamodelgen.git</developerConnection>
         <url>http://github.com/hibernate/hibernate-metamodelgen</url>
     </scm>
     
@@ -272,7 +273,6 @@
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
-                    <remoteTagging>true</remoteTagging>
                     <goals>package deploy javadoc:javadoc org.jboss.maven.plugins:maven-jdocbook-plugin:2.2.1:resources
                         org.jboss.maven.plugins:maven-jdocbook-plugin:2.2.1:generate assembly:assembly
                     </goals>
