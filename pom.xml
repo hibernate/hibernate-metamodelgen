@@ -8,6 +8,7 @@
 
     <name>Hibernate JPA 2 Metamodel Generator</name>
     <description>Annotation Processor to generate JPA 2 static metamodel classes</description>
+    <url>http://www.hibernate.org/subprojects/jpamodelgen.html</url>
 
     <inceptionYear>2009</inceptionYear>
 
