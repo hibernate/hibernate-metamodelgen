@@ -354,6 +354,9 @@ public final class TypeUtils {
 					defaultAccessType = getAccessTypeOfIdAnnotation( subElement );
 					break;
 				}
+				if (defaultAccessType != null) {
+					break;
+				}
 			}
 		}
 		return defaultAccessType;
