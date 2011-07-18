@@ -338,7 +338,7 @@ public final class TypeUtils {
 				}
 			}
 		}
-		while ( superClass != null );
+		while ( superClass != null && defaultAccessType == null );
 		return defaultAccessType;
 	}
 
