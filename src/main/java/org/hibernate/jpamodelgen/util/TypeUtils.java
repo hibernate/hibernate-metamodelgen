@@ -338,7 +338,7 @@ public final class TypeUtils {
 				}
 			}
 		}
-		while ( superClass != null );
+		while ( superClass != null && defaultAccessType == null );
 		return defaultAccessType;
 	}
 
@@ -352,6 +352,9 @@ public final class TypeUtils {
 				AnnotationMirror annotationMirror = (AnnotationMirror) entityAnnotation;
 				if ( isIdAnnotation( annotationMirror ) ) {
 					defaultAccessType = getAccessTypeOfIdAnnotation( subElement );
+					break;
+				}
+				if (defaultAccessType != null) {
 					break;
 				}
 			}
