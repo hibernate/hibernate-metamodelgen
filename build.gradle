@@ -1,0 +1,166 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+
+repositories {
+	mavenCentral()
+	mavenLocal()
+	mavenRepo name: 'jboss-nexus', url: 'https://repository.jboss.org/nexus/content/groups/public'
+}
+
+// build a map of the dependency artifacts to use.  
+// Allows centralized definition of the version of artifacts to use. 
+// In that respect it serves a role similar to <dependencyManagement> in Maven
+slf4jVersion = '1.5.6'
+libraries = [
+    // compile time deps
+    jpa_api:         'org.hibernate.javax.persistence:hibernate-jpa-2.0-api:1.0.0.Final',
+
+    // test libraries
+    testng:          'org.testng:testng:5.8:jdk15',
+    // slf4j_api:       'org.slf4j:slf4j-api:${slf4jVersion}', -- not working!
+    // slf4j_api:       'org.slf4j:slf4j-api:' + slf4jVersion, -- not working!
+	slf4j_api:       'org.slf4j:slf4j-api:' + slf4jVersion,
+	slf4j_log4j:     'org.slf4j:slf4j-log4j12:' + slf4jVersion,
+	hibernate:       'org.hibernate:hibernate-core:3.6.0.Beta1',
+
+    // jaxb task
+    jaxb:            'com.sun.xml.bind:jaxb-xjc:2.1.6',
+    jaxb2_basics:    'org.jvnet.jaxb2_commons:jaxb2-basics:0.6.0',
+    jaxb2_ant:       'org.jvnet.jaxb2_commons:jaxb2-basics-ant:0.6.0' 
+]
+
+configurations {
+    jaxb {
+        description = 'Dependencies for running ant xjc (jaxb class generation)'
+    }
+}
+
+dependencies {
+	compile     libraries.jpa_api
+	
+	testCompile libraries.testng
+	testCompile libraries.slf4j_api
+	testCompile libraries.slf4j_log4j
+	testCompile libraries.hibernate
+	
+	jaxb        libraries.jaxb
+    jaxb        libraries.jaxb2_basics
+    jaxb        libraries.jaxb2_ant 
+}
+
+sourceSets.main {
+    jaxbTargetDir = file( "${buildDir}/generated-sources" ) // needs ", single quotes don't work
+    java.srcDir jaxbTargetDir
+}
+
+group    = 'org.hibernate'
+artifact = 'hibernate-jpamodelgen'
+version  = '1.2.0-SNAPSHOT'
+jar {
+	manifest {
+		attributes 'Implementation-Title'     : '${project.name}', 
+		           'Implementation-URL'       : 'http://www.jboss.org',
+		           'Implementation-Version'   : '${project.version}',
+		           'Implementation-Vendor'    : 'JBoss by Red Hat, Inc.',
+		           'Implementation-Vendor-Id' : 'http://www.jboss.org'
+	}
+}
+
+task jaxb {
+    // output directory
+    jaxbTargetDir = file( "${buildDir}/generated-sources" )
+
+    // input schema
+    ormXsd = file( 'src/main/xsd/orm_2_0.xsd')
+    persistenceXsd = file( 'src/main/xsd/persistence_2_0.xsd')
+
+    // configure Gradle up-to-date checking
+    inputs.files( [ormXsd, persistenceXsd] )
+    outputs.dir( jaxbTargetDir )
+
+    // perform actions
+    doLast {
+        jaxbTargetDir.mkdirs()
+
+        ant.taskdef(name: 'xjc', classname: 'org.jvnet.jaxb2_commons.xjc.XJC2Task', classpath: configurations.jaxb.asPath)
+        ant.jaxbTargetDir = jaxbTargetDir
+
+        ant.xjc(
+                destdir: '${jaxbTargetDir}',
+                package: 'org.hibernate.jpamodelgen.xml.jaxb',
+                schema: ormXsd.path
+        )
+        
+        ant.xjc(
+                destdir: '${jaxbTargetDir}',
+                package: 'org.hibernate.jpamodelgen.xml.jaxb',
+                schema: persistenceXsd.path
+        )        
+    }
+}
+compileJava.dependsOn jaxb
+
+def pomConfig =  {
+        groupId 'org.hibernate'
+        artifactId 'hibernate-jpamodelgen'
+		inceptionYear '2009'
+		name 'Hibernate JPA 2 Metamodel Generator'
+		description 'Annotation Processor to generate JPA 2 static metamodel classes'
+		url 'http://hibernate.org'
+		organization {
+        	name 'Hibernate.org'
+        	url 'http://hibernate.org'
+    	}
+    	issueManagement {
+        	system 'jira'
+        	url 'http://opensource.atlassian.com/projects/hibernate/browse/METAGEN'
+    	}
+    	scm {
+        	url 'http://github.com/hibernate/hibernate-metamodelgen'
+        	connection 'scm:git:git://github.com/hibernate/hibernate-metamodelgen.git'
+        	developerConnection 'scm:git:git@github.com:hibernate/hibernate-metamodelgen.git'
+    	}
+    	licenses {
+        	license {
+            	name 'Apache License, Version 2.0'
+            	url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+        	}
+    	}
+    	developers {
+       		developer {
+            	id 'hibernate-team'
+            	name 'The Hibernate Development Team'
+            	organization 'Hibernate.org'
+            	organizationUrl 'http://hibernate.org'
+        	}
+		}
+    }
+
+// elements used to customize the generated POM 
+configure(install.repositories.mavenInstaller) {
+	pom.project pomConfig
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        name = 'jbossDeployer'
+        pom.project pomConfig
+        repository(id: "jboss-releases-repository", url: "https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/") {
+        	authentication(userName: "hardy.ferentschik", password: "xwbitipx")
+        }
+        snapshotRepository(id: "jboss-snapshots-repository", url: "https://repository.jboss.org/nexus/content/repositories/snapshots") {
+        	authentication(userName: "hardy.ferentschik", password: "xwbitipx")
+        }
+    }   
+}
+
+task sourcesJar(type: Jar, dependsOn: compileJava) {
+	from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+artifacts {
+	archives sourcesJar
+}
+
+uploadArchives.dependsOn sourcesJar
