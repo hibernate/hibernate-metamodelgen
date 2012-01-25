@@ -14,17 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import org.testng.annotations.Test;
 
 import org.hibernate.jpamodelgen.test.util.CompilationTest;
+import org.hibernate.jpamodelgen.test.util.TestForIssue;
 
 import static org.hibernate.jpamodelgen.test.util.TestUtil.assertMetamodelClassGeneratedFor;
 
 /**
- * Test for METAGEN-40
- *
  * @author Hardy Ferentschik
  */
+@TestForIssue(jiraKey = "METAGEN-40")
 public class DefaultPackageTest extends CompilationTest {
 	@Test
 	public void testMetaModelGeneratedForEntitiesInDefaultPackage() {
