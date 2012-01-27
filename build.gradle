@@ -16,7 +16,7 @@ libraries = [
     jpa_api:         'org.hibernate.javax.persistence:hibernate-jpa-2.0-api:1.0.0.Final',
 
     // test libraries
-    testng:          'org.testng:testng:5.8:jdk15',
+    testng:          'org.testng:testng:6.1',
     // slf4j_api:       'org.slf4j:slf4j-api:${slf4jVersion}', -- not working!
     // slf4j_api:       'org.slf4j:slf4j-api:' + slf4jVersion, -- not working!
 	slf4j_api:       'org.slf4j:slf4j-api:' + slf4jVersion,
@@ -26,7 +26,7 @@ libraries = [
     // jaxb task
     jaxb:            'com.sun.xml.bind:jaxb-xjc:2.1.6',
     jaxb2_basics:    'org.jvnet.jaxb2_commons:jaxb2-basics:0.6.0',
-    jaxb2_ant:       'org.jvnet.jaxb2_commons:jaxb2-basics-ant:0.6.0' 
+    jaxb2_ant:       'org.jvnet.jaxb2_commons:jaxb2-basics-ant:0.6.0'
 ]
 
 configurations {
@@ -42,15 +42,20 @@ dependencies {
 	testCompile libraries.slf4j_api
 	testCompile libraries.slf4j_log4j
 	testCompile libraries.hibernate
-	
+
 	jaxb        libraries.jaxb
     jaxb        libraries.jaxb2_basics
-    jaxb        libraries.jaxb2_ant 
+    jaxb        libraries.jaxb2_ant
 }
 
 sourceSets.main {
     jaxbTargetDir = file( "${buildDir}/generated-sources" ) // needs ", single quotes don't work
     java.srcDir jaxbTargetDir
+}
+
+sourceSets.main {
+    xsdDir = file( "${rootDir}/src/main/xsd" )
+    resources.srcDir xsdDir
 }
 
 group    = 'org.hibernate'
@@ -88,17 +93,20 @@ task jaxb {
         ant.xjc(
                 destdir: '${jaxbTargetDir}',
                 package: 'org.hibernate.jpamodelgen.xml.jaxb',
-                schema: ormXsd.path
-        )
-        
-        ant.xjc(
-                destdir: '${jaxbTargetDir}',
-                package: 'org.hibernate.jpamodelgen.xml.jaxb',
-                schema: persistenceXsd.path
-        )        
+                extension: 'true'
+        ) {
+            schema  (dir:"src/main/xsd", includes:"*.xsd")
+        }
     }
 }
 compileJava.dependsOn jaxb
+
+test {
+    useTestNG()
+    //configuring a system property for tests
+    systemProperty 'sourceBaseDir', 'src/test/java'
+    systemProperty 'outBaseDir', "${buildDir}/classes/test"
+}
 
 def pomConfig =  {
         groupId 'org.hibernate'
@@ -146,10 +154,10 @@ uploadArchives {
         name = 'jbossDeployer'
         pom.project pomConfig
         repository(id: "jboss-releases-repository", url: "https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/") {
-        	authentication(userName: "hardy.ferentschik", password: "xwbitipx")
+        	authentication(userName: "hardy.ferentschik", password: "***")
         }
         snapshotRepository(id: "jboss-snapshots-repository", url: "https://repository.jboss.org/nexus/content/repositories/snapshots") {
-        	authentication(userName: "hardy.ferentschik", password: "xwbitipx")
+        	authentication(userName: "hardy.ferentschik", password: "***")
         }
     }   
 }
