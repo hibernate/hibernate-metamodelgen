@@ -16,7 +16,7 @@
  */
 
 // $Id:$
-package org.hibernate.jpamodelgen.test.xmlmetacomplete;
+package org.hibernate.jpamodelgen.test.xmlmetacomplete.singlepu;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
