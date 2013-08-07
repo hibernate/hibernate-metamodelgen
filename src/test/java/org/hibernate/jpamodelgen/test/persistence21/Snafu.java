@@ -14,32 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hibernate.jpamodelgen.test.targetannotation;
-
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-
-import org.hibernate.annotations.Target;
+package org.hibernate.jpamodelgen.test.persistence21;
 
 /**
  * @author Hardy Ferentschik
  */
-@Entity
-class House {
-	@Id
-	long id;
+public class Snafu {
+	private long id;
 
-	@Embedded
-	@Target(AddressImpl.class)
-	private Address address;
-
-	public Address getAddress() {
-		return address;
+	public long getId() {
+		return id;
 	}
 
-	public void setAddress(Address address) {
-		this.address = address;
+	public void setId(long id) {
+		this.id = id;
 	}
 }
+
 

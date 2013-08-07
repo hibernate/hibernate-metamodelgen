@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source
- * Copyright 2010, Red Hat Middleware LLC, and individual contributors
+ * Copyright 2013, Red Hat Middleware LLC, and individual contributors
  * by the @authors tag. See the copyright.txt in the distribution for a
  * full listing of individual contributors.
  *
@@ -14,32 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.hibernate.jpamodelgen.test.targetannotation;
-
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-
-import org.hibernate.annotations.Target;
+package org.hibernate.jpamodelgen.util.xml;
 
 /**
+ * Custom exception for all sorts of XML parsing related exceptions.
+ *
  * @author Hardy Ferentschik
  */
-@Entity
-class House {
-	@Id
-	long id;
-
-	@Embedded
-	@Target(AddressImpl.class)
-	private Address address;
-
-	public Address getAddress() {
-		return address;
-	}
-
-	public void setAddress(Address address) {
-		this.address = address;
+public class XmlParsingException extends Exception {
+	public XmlParsingException(String message, Throwable root) {
+		super( message, root );
 	}
 }
+
 
