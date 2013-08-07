@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source
- * Copyright 2010, Red Hat Middleware LLC, and individual contributors
+ * Copyright 2013, Red Hat Middleware LLC, and individual contributors
  * by the @authors tag. See the copyright.txt in the distribution for a
  * full listing of individual contributors.
  *
@@ -14,27 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// $Id:$
-package org.hibernate.jpamodelgen.test.xmlmetacomplete;
-
-import javax.persistence.Entity;
-import javax.persistence.Id;
+package org.hibernate.jpamodelgen.util.xml;
 
 /**
+ * Custom exception for all sorts of XML parsing related exceptions.
+ *
  * @author Hardy Ferentschik
  */
-@Entity
-public class Dummy {
-	@Id
-	private long id;
-
-	public long getId() {
-		return id;
-	}
-
-	public void setId(long id) {
-		this.id = id;
+public class XmlParsingException extends Exception {
+	public XmlParsingException(String message, Throwable root) {
+		super( message, root );
 	}
 }
 

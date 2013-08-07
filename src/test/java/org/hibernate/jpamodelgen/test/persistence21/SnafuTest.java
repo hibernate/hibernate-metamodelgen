@@ -14,35 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// $Id: XmlMappingTest.java 20721 2010-09-27 12:40:10Z hardy.ferentschik $
-package org.hibernate.jpamodelgen.test.xmlmetacomplete;
+package org.hibernate.jpamodelgen.test.persistence21;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.testng.annotations.Test;
-
 import org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor;
 import org.hibernate.jpamodelgen.test.util.CompilationTest;
 import org.hibernate.jpamodelgen.test.util.TestUtil;
+import org.hibernate.jpamodelgen.test.xmlonly.Car;
+import org.hibernate.jpamodelgen.test.xmlonly.Course;
+import org.hibernate.jpamodelgen.test.xmlonly.Option;
+import org.hibernate.jpamodelgen.test.xmlonly.Period;
+import org.hibernate.jpamodelgen.test.xmlonly.Teacher;
+import org.hibernate.jpamodelgen.test.xmlonly.Tire;
+import org.testng.annotations.Test;
 
-import static org.hibernate.jpamodelgen.test.util.TestUtil.assertNoSourceFileGeneratedFor;
+import static org.hibernate.jpamodelgen.test.util.TestUtil.assertMetamodelClassGeneratedFor;
+import static org.hibernate.jpamodelgen.test.util.TestUtil.assertPresenceOfFieldInMetamodelFor;
 
 /**
  * @author Hardy Ferentschik
  */
-public class XmlMetaDataCompleteTest extends CompilationTest {
+public class SnafuTest extends CompilationTest {
 	@Test
-	public void testNoMetaModelGenerated() {
-		// the xml mapping files used in the example say that the xml data is meta complete. For that
-		// reason there should be no meta model source file for the annotated Dummy entity
-		assertNoSourceFileGeneratedFor( Dummy.class );
+	public void testMetaModelGeneratedForXmlConfiguredEntity() {
+		assertMetamodelClassGeneratedFor( Snafu.class );
 	}
 
 	@Override
 	protected String getPackageNameOfCurrentTest() {
-		return XmlMetaDataCompleteTest.class.getPackage().getName();
+		return SnafuTest.class.getPackage().getName();
 	}
 
 	@Override
@@ -50,7 +52,7 @@ public class XmlMetaDataCompleteTest extends CompilationTest {
 		Map<String, String> properties = new HashMap<String, String>();
 		properties.put(
 				JPAMetaModelEntityProcessor.PERSISTENCE_XML_OPTION,
-				TestUtil.fcnToPath( XmlMetaDataCompleteTest.class.getPackage().getName() ) + "/persistence.xml"
+				TestUtil.fcnToPath( SnafuTest.class.getPackage().getName() ) + "/persistence.xml"
 		);
 		return properties;
 	}
