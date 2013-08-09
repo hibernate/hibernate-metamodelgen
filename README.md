@@ -8,7 +8,7 @@
 
 The Hibernate JPA 2 Metamodel Generator is a Java 6 annotation processor generating meta model classes for JPA 2 type-safe criteria queries.
 
-The processor (*JPAMetaModelEntityProcessor*) processes classes annotated with *@Entity*, *@MappedSuperclass* or *@Embeddable*, as well as entities mapped in */META-INF/orm.xml* and mapping files specified in *persistence.xml*.
+The processor, *JPAMetaModelEntityProcessor*, processes classes annotated with *@Entity*, *@MappedSuperclass* or *@Embeddable*, as well as entities mapped in */META-INF/orm.xml* and mapping files specified in *persistence.xml*.
 
 ## System Requirements
 
