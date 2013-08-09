@@ -2,7 +2,7 @@
 
 ## Latest stable version
 
-*1.2.0.Final, 06.03.2012*
+*1.3.0.Final, 09.08.2013*
 
 ## What is it?
 
